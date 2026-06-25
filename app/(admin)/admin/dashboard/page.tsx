@@ -1,8 +1,7 @@
 import type { ReactElement } from "react";
 
 import { DashboardOverview } from "@/features/dashboard/components/dashboard-overview";
-import { getSalesCollectionsSummary } from "@/features/sales/queries";
-import { canViewSales } from "@/lib/auth/permissions";
+import { getDashboardData } from "@/features/dashboard/queries";
 import { getAdminAccessContext } from "@/lib/auth/session";
 
 export default async function AdminDashboardPage(): Promise<ReactElement | null> {
@@ -12,10 +11,7 @@ export default async function AdminDashboardPage(): Promise<ReactElement | null>
     return null;
   }
 
-  const collections = canViewSales(access.membership.role)
-    ? await getSalesCollectionsSummary(access)
-    : null;
+  const data = await getDashboardData(access);
 
-  return <DashboardOverview access={access} collections={collections} />;
+  return <DashboardOverview access={access} data={data} />;
 }
-
