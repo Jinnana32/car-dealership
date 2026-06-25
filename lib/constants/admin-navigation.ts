@@ -1,7 +1,17 @@
-import { canManageDealership } from "@/lib/auth/permissions";
 import type { AppRole } from "@/lib/auth/types";
+import { canUseAiSalesAnalyst, canViewReports } from "@/lib/auth/permissions";
 
-export type AdminNavigationIcon = "dashboard" | "settings";
+export type AdminNavigationIcon =
+  | "aiSalesAnalyst"
+  | "brochures"
+  | "customers"
+  | "dashboard"
+  | "facebookSalesHub"
+  | "inquiries"
+  | "pipeline"
+  | "reports"
+  | "settings"
+  | "vehicles";
 
 export type AdminNavigationItem = {
   disabled?: boolean;
@@ -21,7 +31,21 @@ export type AdminNavigationConfig = {
 };
 
 export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
-  const canManage = canManageDealership(role);
+  const aiItem: AdminNavigationItem | null = canUseAiSalesAnalyst(role)
+    ? {
+        href: "/admin/ai",
+        icon: "aiSalesAnalyst",
+        label: "AI Sales Analyst",
+      }
+    : null;
+  const reportsItem: AdminNavigationItem | null =
+    canViewReports(role)
+      ? {
+          href: "/admin/reports",
+          icon: "reports",
+          label: "Reports",
+        }
+      : null;
 
   return {
     mobileItems: [
@@ -30,6 +54,38 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
         icon: "dashboard",
         label: "Dashboard",
       },
+      {
+        href: "/admin/vehicles",
+        icon: "vehicles",
+        label: "Vehicles",
+      },
+      {
+        href: "/admin/pipeline",
+        icon: "pipeline",
+        label: "Pipeline",
+      },
+      {
+        href: "/admin/inquiries",
+        icon: "inquiries",
+        label: "Inquiries",
+      },
+      {
+        href: "/admin/customers",
+        icon: "customers",
+        label: "Customers",
+      },
+      {
+        href: "/admin/facebook",
+        icon: "facebookSalesHub",
+        label: "Facebook Sales Hub",
+      },
+      {
+        href: "/admin/brochures",
+        icon: "brochures",
+        label: "Brochures",
+      },
+      ...(aiItem ? [aiItem] : []),
+      ...(reportsItem ? [reportsItem] : []),
       {
         href: "/admin/settings",
         icon: "settings",
@@ -44,94 +100,43 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
             icon: "dashboard",
             label: "Dashboard",
           },
-        ],
-      },
-      {
-        title: "Inventory",
-        items: [
           {
-            disabled: true,
-            href: "#",
+            href: "/admin/vehicles",
+            icon: "vehicles",
             label: "Vehicles",
           },
           {
-            disabled: true,
-            href: "#",
-            label: "Add Vehicle",
-          },
-        ],
-      },
-      {
-        title: "Inquiries",
-        items: [
-          {
-            disabled: true,
-            href: "#",
-            label: "Leads",
-          },
-          {
-            disabled: true,
-            href: "#",
+            href: "/admin/pipeline",
+            icon: "pipeline",
             label: "Pipeline",
           },
           {
-            disabled: true,
-            href: "#",
+            href: "/admin/inquiries",
+            icon: "inquiries",
+            label: "Inquiries",
+          },
+          {
+            href: "/admin/customers",
+            icon: "customers",
             label: "Customers",
           },
-        ],
-      },
-      {
-        title: "Marketing",
-        items: [
           {
-            disabled: true,
-            href: "#",
-            label: "Facebook Posts",
+            href: "/admin/facebook",
+            icon: "facebookSalesHub",
+            label: "Facebook Sales Hub",
           },
           {
-            disabled: true,
-            href: "#",
-            label: "Post Generator",
-          },
-        ],
-      },
-      {
-        items: [
-          {
-            disabled: true,
-            href: "#",
+            href: "/admin/brochures",
+            icon: "brochures",
             label: "Brochures",
           },
-          {
-            disabled: true,
-            href: "#",
-            label: "Reports",
-          },
-        ],
-      },
-      {
-        title: "Settings",
-        items: [
+          ...(aiItem ? [aiItem] : []),
+          ...(reportsItem ? [reportsItem] : []),
           {
             href: "/admin/settings",
             icon: "settings",
-            label: "Dealership Profile",
+            label: "Settings",
           },
-          ...(canManage
-            ? [
-                {
-                  disabled: true,
-                  href: "#",
-                  label: "Users & Roles",
-                },
-                {
-                  disabled: true,
-                  href: "#",
-                  label: "Integrations",
-                },
-              ]
-            : []),
         ],
       },
     ],

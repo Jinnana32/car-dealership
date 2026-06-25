@@ -13,6 +13,7 @@ import {
 } from "@/lib/auth/actions";
 import { canManageDealership, getRoleLabel } from "@/lib/auth/permissions";
 import { getAdminAccessContext } from "@/lib/auth/session";
+import { serializeTextList } from "@/features/vehicles/pricing";
 
 type SettingsPageProps = {
   searchParams: Promise<{
@@ -198,6 +199,48 @@ export default async function SettingsPage({
                     disabled={!dealershipCanBeManaged}
                     placeholder="https://example.com/logo.png"
                   />
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-border bg-[#fafaf9] p-4">
+                <p className="text-sm font-semibold text-foreground">
+                  Facebook post defaults
+                </p>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="default_post_location_tag">Default location tag</Label>
+                    <Input
+                      id="default_post_location_tag"
+                      name="default_post_location_tag"
+                      defaultValue={access.dealership.default_post_location_tag ?? ""}
+                      disabled={!dealershipCanBeManaged}
+                      placeholder="Iloilo"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="default_financing_headline">Default financing headline</Label>
+                    <Input
+                      id="default_financing_headline"
+                      name="default_financing_headline"
+                      defaultValue={access.dealership.default_financing_headline ?? ""}
+                      disabled={!dealershipCanBeManaged}
+                      placeholder="FINANCING OPTION — ALL IN!"
+                    />
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="default_sale_inclusions">Default sale inclusions</Label>
+                    <textarea
+                      className="min-h-32 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm"
+                      defaultValue={serializeTextList(access.dealership.default_sale_inclusions)}
+                      disabled={!dealershipCanBeManaged}
+                      id="default_sale_inclusions"
+                      name="default_sale_inclusions"
+                      placeholder={"LTO & HPG Verified\n3 Months Service Warranty"}
+                    />
+                  </div>
                 </div>
               </div>
 

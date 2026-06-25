@@ -9,18 +9,31 @@ export type BrandConfig = {
   subtitle: string;
 };
 
+const BRAND_LOGO_CANDIDATES = [
+  "images/best_wheels_iloilo.png",
+  "images/best_wheels_iloilo.jpg",
+  "images/bests_wheels_iloilo.jpg",
+  "images/best-wheels-logo.png",
+  "images/best-wheels-logo.jpg",
+  "branding/best-wheels-logo.png",
+] as const;
+
 export function getBrandConfig(): BrandConfig {
-  const logoPath = join(
-    process.cwd(),
-    "public",
-    "branding",
-    "best-wheels-logo.png",
-  );
+  for (const publicPath of BRAND_LOGO_CANDIDATES) {
+    const absolutePath = join(process.cwd(), "public", publicPath);
+
+    if (existsSync(absolutePath)) {
+      return {
+        logoSrc: `/${publicPath}`,
+        name: "Best Wheels",
+        subtitle: "Car Display",
+      };
+    }
+  }
 
   return {
-    logoSrc: existsSync(logoPath) ? "/branding/best-wheels-logo.png" : null,
+    logoSrc: null,
     name: "Best Wheels",
     subtitle: "Car Display",
   };
 }
-

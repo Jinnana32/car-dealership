@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ChartColumn,
+  FileText,
+  BrainCircuit,
+  CarFront,
+  KanbanSquare,
   LayoutDashboard,
   Lock,
+  Megaphone,
+  MessagesSquare,
   Settings,
+  UsersRound,
 } from "lucide-react";
 import type { ReactElement } from "react";
 
@@ -19,8 +27,16 @@ import type {
 import { cn } from "@/lib/utils";
 
 const navigationIcons: Record<AdminNavigationIcon, typeof LayoutDashboard> = {
+  aiSalesAnalyst: BrainCircuit,
+  brochures: FileText,
+  reports: ChartColumn,
+  customers: UsersRound,
   dashboard: LayoutDashboard,
+  facebookSalesHub: Megaphone,
+  inquiries: MessagesSquare,
+  pipeline: KanbanSquare,
   settings: Settings,
+  vehicles: CarFront,
 };
 
 type AdminSidebarProps = {
@@ -43,12 +59,14 @@ export function AdminSidebar({
   return (
     <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 border-r border-border bg-white lg:flex lg:flex-col">
       <div className="space-y-5 px-6 py-6">
-        <BrandSignature
-          className="min-h-10"
-          logoClassName="max-h-10 max-w-[160px] object-contain"
-          logoSrc={brandLogoSrc}
-          showSubtitle={!brandLogoSrc}
-        />
+        <Link className="block" href="/admin/dashboard">
+          <BrandSignature
+            className="min-h-12"
+            logoClassName="h-12 w-auto max-w-[204px] object-contain object-left"
+            logoSrc={brandLogoSrc}
+            showSubtitle={!brandLogoSrc}
+          />
+        </Link>
 
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">

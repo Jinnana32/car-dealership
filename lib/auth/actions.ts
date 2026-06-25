@@ -32,6 +32,23 @@ function redirectWithMessage(
   redirect(`${pathname}?${searchParams.toString()}`);
 }
 
+function getSanitizedLoginErrorMessage(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("invalid login credentials") ||
+    normalized.includes("invalid credentials")
+  ) {
+    return "Invalid email or password.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "This account is not ready to sign in yet. Contact an administrator if the issue continues.";
+  }
+
+  return "Unable to sign in right now. Please try again.";
+}
+
 export async function loginAction(formData: FormData): Promise<void> {
   const parsed = loginFormSchema.safeParse({
     email: formData.get("email"),
@@ -59,7 +76,7 @@ export async function loginAction(formData: FormData): Promise<void> {
 
   if (error) {
     const searchParams = new URLSearchParams({
-      error: error.message,
+      error: getSanitizedLoginErrorMessage(error.message),
       next: sanitizeNextPath(parsed.data.next),
     });
 
@@ -106,7 +123,11 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
     .eq("id", access.profile.id);
 
   if (error) {
-    redirectWithMessage("/admin/settings", "error", error.message);
+    redirectWithMessage(
+      "/admin/settings",
+      "error",
+      "Unable to update profile settings right now.",
+    );
   }
 
   revalidatePath("/admin/dashboard");
@@ -135,6 +156,9 @@ export async function updateDealershipSettingsAction(
   const parsed = dealershipSettingsSchema.safeParse({
     contact_email: formData.get("contact_email"),
     contact_phone: formData.get("contact_phone"),
+    default_financing_headline: formData.get("default_financing_headline"),
+    default_post_location_tag: formData.get("default_post_location_tag"),
+    default_sale_inclusions: formData.get("default_sale_inclusions"),
     facebook_page_url: formData.get("facebook_page_url"),
     logo_url: formData.get("logo_url"),
     name: formData.get("name"),
@@ -156,7 +180,11 @@ export async function updateDealershipSettingsAction(
     .eq("id", access.dealership.id);
 
   if (error) {
-    redirectWithMessage("/admin/settings", "error", error.message);
+    redirectWithMessage(
+      "/admin/settings",
+      "error",
+      "Unable to update dealership settings right now.",
+    );
   }
 
   revalidatePath("/admin/dashboard");
@@ -164,4 +192,3 @@ export async function updateDealershipSettingsAction(
 
   redirectWithMessage("/admin/settings", "success", "Dealership settings updated.");
 }
-

@@ -1,0 +1,20 @@
+import type { ReactElement } from "react";
+
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function AiSalesAnalystLoading(): ReactElement {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-24 w-full" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <Skeleton className="h-[620px] w-full" />
+        <Skeleton className="h-[620px] w-full" />
+      </div>
+    </div>
+  );
+}

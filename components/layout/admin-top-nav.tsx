@@ -57,14 +57,18 @@ export function AdminTopNav({
             <Input
               aria-label="Search"
               className="h-11 border-border bg-[#fafaf9] pl-10 shadow-none"
-              placeholder="Search"
+              disabled
+              placeholder="Global search coming soon"
+              readOnly
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-3 xl:justify-end">
             <Button
               aria-label="Notifications"
+              disabled
               size="icon"
+              title="Notifications coming soon"
               variant="outline"
               className="h-11 w-11 rounded-full border-border bg-white"
               type="button"

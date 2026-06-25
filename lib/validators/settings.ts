@@ -26,6 +26,24 @@ export const dealershipSettingsSchema = z.object({
     .trim()
     .max(50, "Contact phone must be 50 characters or fewer.")
     .transform((value) => value || null),
+  default_financing_headline: z
+    .string()
+    .trim()
+    .max(160, "Financing headline must be 160 characters or fewer.")
+    .transform((value) => value || null),
+  default_post_location_tag: z
+    .string()
+    .trim()
+    .max(80, "Location tag must be 80 characters or fewer.")
+    .transform((value) => value || null),
+  default_sale_inclusions: z
+    .string()
+    .transform((value) =>
+      value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    ),
   facebook_page_url: z
     .string()
     .trim()

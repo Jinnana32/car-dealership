@@ -37,16 +37,22 @@ const inventoryTabs = [
 
 const quickActions = [
   {
+    disabled: false,
+    href: "/admin/vehicles/new",
     icon: CarFront,
     label: "Add Vehicle",
   },
   {
+    disabled: false,
+    href: "/admin/leads/new",
     icon: MessageSquareMore,
     label: "Add Lead",
   },
   {
+    disabled: false,
+    href: "/admin/facebook",
     icon: Megaphone,
-    label: "Generate Facebook Post",
+    label: "Open Facebook Sales Hub",
   },
 ];
 
@@ -60,9 +66,17 @@ export function DashboardOverview({
       actions={
         <>
           <Button asChild variant="outline">
+            <Link href="/admin/vehicles">View Vehicles</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/admin/inquiries">View Inquiries</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/admin/settings">Open Settings</Link>
           </Button>
-          <Button disabled>Add Vehicle</Button>
+          <Button asChild>
+            <Link href="/admin/vehicles/new">Add Vehicle</Link>
+          </Button>
         </>
       }
     >
@@ -79,8 +93,8 @@ export function DashboardOverview({
                     Keep your public inventory current and ready to publish.
                   </p>
                 </div>
-                <Button disabled size="sm">
-                  Add Vehicle
+                <Button asChild size="sm">
+                  <Link href="/admin/vehicles/new">Add Vehicle</Link>
                 </Button>
               </div>
 
@@ -131,8 +145,8 @@ export function DashboardOverview({
                             Add your first vehicle to start building the public inventory.
                           </p>
                         </div>
-                        <Button disabled size="sm">
-                          Add Vehicle
+                        <Button asChild size="sm">
+                          <Link href="/admin/vehicles/new">Add Vehicle</Link>
                         </Button>
                       </div>
                     </TableCell>
@@ -161,11 +175,11 @@ export function DashboardOverview({
                   Recent inquiries
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Website and Facebook leads will appear here once they start coming in.
+                  Manual leads added by the team will appear here, alongside connected channels later.
                 </p>
               </div>
-              <Button disabled size="sm" variant="outline">
-                Add Lead
+              <Button asChild size="sm" variant="outline">
+                <Link href="/admin/leads/new">Add Lead</Link>
               </Button>
             </div>
 
@@ -232,18 +246,35 @@ export function DashboardOverview({
             </div>
             <div className="mt-4 space-y-3">
               {quickActions.map((action) => (
-                <Button
-                  key={action.label}
-                  className="w-full justify-between"
-                  disabled
-                  variant="outline"
-                >
-                  <span className="flex items-center gap-2">
-                    <action.icon className="h-4 w-4" />
-                    {action.label}
-                  </span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                action.disabled || !action.href ? (
+                  <Button
+                    key={action.label}
+                    className="w-full justify-between"
+                    disabled
+                    variant="outline"
+                  >
+                    <span className="flex items-center gap-2">
+                      <action.icon className="h-4 w-4" />
+                      {action.label}
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    key={action.label}
+                    asChild
+                    className="w-full justify-between"
+                    variant="outline"
+                  >
+                    <Link href={action.href}>
+                      <span className="flex items-center gap-2">
+                        <action.icon className="h-4 w-4" />
+                        {action.label}
+                      </span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                )
               ))}
               <Button asChild className="w-full justify-between">
                 <Link href="/admin/settings">
@@ -271,21 +302,21 @@ export function DashboardOverview({
           <section className="rounded-[20px] border border-border bg-white p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base font-semibold text-foreground">
-                Facebook posting status
+                Facebook Sales Hub
               </h2>
               <FileText className="h-4 w-4 text-primary" />
             </div>
             <div className="mt-4 space-y-3">
               <div className="rounded-2xl border border-border bg-[#fafaf9] px-4 py-4">
                 <p className="text-sm font-medium text-foreground">
-                  No Facebook page connected yet.
+                  Vehicle captions, Messenger links, and click tracking now live in the Facebook Sales Hub.
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Connect your dealership page before scheduling posts.
+                  Configure the dealership page, generate content kits, and review Messenger CTA activity.
                 </p>
               </div>
-              <Button disabled variant="outline" className="w-full">
-                Generate Facebook Post
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/admin/facebook">Open Facebook Sales Hub</Link>
               </Button>
             </div>
           </section>

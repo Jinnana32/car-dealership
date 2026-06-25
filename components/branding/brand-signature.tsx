@@ -25,10 +25,12 @@ export function BrandSignature({
       {logoSrc ? (
         <Image
           alt="Best Wheels"
-          className={cn("block object-contain", logoClassName)}
+          className={cn("block object-contain object-left", logoClassName)}
+          height={60}
+          priority
+          sizes="204px"
           src={logoSrc}
-          width={160}
-          height={40}
+          width={272}
         />
       ) : (
         <div className="min-w-0">

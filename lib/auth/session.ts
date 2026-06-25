@@ -66,7 +66,7 @@ export const getAdminAccessContext = cache(async (): Promise<AdminAccessContext 
   const { data: dealership, error: dealershipError } = await supabase
     .from("dealerships")
     .select(
-      "id, contact_email, contact_phone, created_at, facebook_page_url, logo_url, name, slug, updated_at",
+      "id, contact_email, contact_phone, created_at, default_financing_headline, default_post_location_tag, default_sale_inclusions, facebook_page_url, logo_url, name, slug, updated_at",
     )
     .eq("id", membership.dealership_id)
     .maybeSingle<Dealership>();
