@@ -4,9 +4,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdminAccessContext } from "@/lib/auth/types";
 import { getInquiriesList } from "@/features/inquiries/queries";
 import type { InquiryListItem, InquiryListResult, InquiryStatus } from "@/features/inquiries/types";
-import { buildDefaultPipelineStages } from "@/features/pipeline/utils";
+import { buildDefaultPipelineStages, buildPipelineSummary } from "@/features/pipeline/utils";
 import type {
   PipelineStageDefinition,
+  PipelineSummary,
   PipelineViewMode,
 } from "@/features/pipeline/types";
 import { pipelineViewSchema } from "@/features/pipeline/validators";
@@ -20,7 +21,9 @@ export type PipelineDataResult = {
   columns: PipelineBoardColumn[];
   filters: InquiryListResult["filters"];
   inquiries: InquiryListItem[];
+  showClosed: boolean;
   stages: PipelineStageDefinition[];
+  summary: PipelineSummary;
   totalCount: number;
   view: PipelineViewMode;
 };
@@ -29,6 +32,7 @@ type PipelineSearchParams = {
   assignedToId?: string | string[];
   followUp?: string | string[];
   search?: string | string[];
+  showClosed?: string | string[];
   source?: string | string[];
   status?: string | string[];
   vehicleId?: string | string[];
@@ -43,6 +47,19 @@ export function parsePipelineView(
   searchParams: PipelineSearchParams,
 ): PipelineViewMode {
   return pipelineViewSchema.parse(getScalarValue(searchParams.view));
+}
+
+export function parsePipelineShowClosed(
+  searchParams: PipelineSearchParams,
+  view: PipelineViewMode,
+): boolean {
+  if (view === "list") {
+    return true;
+  }
+
+  const value = getScalarValue(searchParams.showClosed);
+
+  return value === "true" || value === "1";
 }
 
 export async function getPipelineStages(
@@ -72,11 +89,16 @@ export async function getPipelineData(
   access: AdminAccessContext,
   searchParams: PipelineSearchParams,
 ): Promise<PipelineDataResult> {
-  const [view, stages, inquiryList] = await Promise.all([
-    Promise.resolve(parsePipelineView(searchParams)),
+  const view = parsePipelineView(searchParams);
+  const [showClosed, stages, inquiryList] = await Promise.all([
+    Promise.resolve(parsePipelineShowClosed(searchParams, view)),
     getPipelineStages(access),
     getInquiriesList(access, searchParams),
   ]);
+
+  const visibleStages = showClosed
+    ? stages
+    : stages.filter((stage) => !stage.is_terminal);
 
   const inquiriesByStatus = new Map<InquiryStatus, typeof inquiryList.inquiries>();
 
@@ -91,13 +113,15 @@ export async function getPipelineData(
   }
 
   return {
-    columns: stages.map((stage) => ({
+    columns: visibleStages.map((stage) => ({
       inquiries: inquiriesByStatus.get(stage.key) ?? [],
       stage,
     })),
     filters: inquiryList.filters,
     inquiries: inquiryList.inquiries,
+    showClosed,
     stages,
+    summary: buildPipelineSummary(inquiryList.inquiries),
     totalCount: inquiryList.totalCount,
     view,
   };

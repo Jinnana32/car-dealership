@@ -34,7 +34,7 @@ export function AdminShell({
           userDisplayName={userDisplayName}
         />
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <AdminTopNav
             brandLogoSrc={brand.logoSrc}
             dealershipName={access.dealership.name}
@@ -44,7 +44,7 @@ export function AdminShell({
           />
           <AdminMobileNav navigationItems={navigation.mobileItems} />
           <main className="flex-1 px-4 py-5 md:px-6 md:py-6 lg:px-8 lg:py-7">
-            <div className="mx-auto w-full max-w-[1320px]">{children}</div>
+            <div className="mx-auto w-full min-w-0 max-w-[1320px]">{children}</div>
           </main>
         </div>
       </div>

@@ -9,7 +9,6 @@ import {
 } from "@/features/vehicles/constants";
 import {
   VEHICLE_FINANCING_DISPLAY_STYLES,
-  VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS,
   parseCheckboxValue,
   parseFinancingTermsInput,
   parseTextList,
@@ -177,13 +176,10 @@ export const createVehicleSchema = z.object({
     .transform((value) => value || null),
   engine_size: nullableText(40),
   engine_type: nullableText(120),
-  financing_down_payment_percent: optionalNumber.refine(
-    (value) =>
-      value === null ||
-      VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS.includes(
-        value as (typeof VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS)[number],
-      ),
-    "Select a down payment percentage.",
+  financing_down_payment_mode: z.enum(["amount", "percent"]).catch("percent"),
+  financing_down_payment_value: optionalNumber.refine(
+    (value) => value === null || value >= 0,
+    "Enter a valid down payment.",
   ),
   financing_enabled: optionalBoolean,
   financing_monthly_terms: financingTermsField.catch([]),

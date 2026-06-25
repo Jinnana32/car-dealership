@@ -1,13 +1,18 @@
 import {
   DEFAULT_PIPELINE_STAGES,
   LOST_REASON_LABELS,
+  PIPELINE_STAGE_COLORS,
   PIPELINE_STAGE_SEQUENCE,
 } from "@/features/pipeline/constants";
 import type { InquiryEvent, InquiryStatus } from "@/features/inquiries/types";
 import type {
   InquiryFollowUpBucket,
   LostReason,
+  PipelineColumnSummary,
   PipelineStageDefinition,
+  PipelineStageKey,
+  PipelineSummary,
+  PipelineViewMode,
 } from "@/features/pipeline/types";
 
 export function buildDefaultPipelineStages(): PipelineStageDefinition[] {
@@ -153,4 +158,176 @@ export function truncatePipelineNote(
   }
 
   return `${trimmed.slice(0, maxLength - 1)}…`;
+}
+
+export function getPipelineStageColors(stageKey: PipelineStageKey) {
+  return PIPELINE_STAGE_COLORS[stageKey];
+}
+
+function sumInquiryVehicleValue(
+  inquiries: Array<{
+    vehicle: { price: number | null } | null;
+  }>,
+): number {
+  return inquiries.reduce((sum, inquiry) => {
+    if (inquiry.vehicle?.price === null || inquiry.vehicle?.price === undefined) {
+      return sum;
+    }
+
+    return sum + inquiry.vehicle.price;
+  }, 0);
+}
+
+export function buildColumnSummary(
+  inquiries: Array<{
+    vehicle: { price: number | null } | null;
+  }>,
+): PipelineColumnSummary {
+  return {
+    count: inquiries.length,
+    totalValue: sumInquiryVehicleValue(inquiries),
+  };
+}
+
+export function buildPipelineSummary(
+  inquiries: Array<{
+    assigned_to: string | null;
+    followUpBucket: InquiryFollowUpBucket;
+    status: InquiryStatus;
+    vehicle: { price: number | null } | null;
+  }>,
+): PipelineSummary {
+  const activeInquiries = inquiries.filter(
+    (inquiry) => inquiry.status !== "won" && inquiry.status !== "lost",
+  );
+  const wonInquiries = inquiries.filter((inquiry) => inquiry.status === "won");
+
+  return {
+    activeCount: activeInquiries.length,
+    closedValue: sumInquiryVehicleValue(wonInquiries),
+    overdueCount: inquiries.filter((inquiry) => inquiry.followUpBucket === "overdue")
+      .length,
+    pipeValue: sumInquiryVehicleValue(activeInquiries),
+    unassignedCount: inquiries.filter((inquiry) => !inquiry.assigned_to).length,
+  };
+}
+
+export type PipelineHrefFilters = {
+  assignedToId?: string;
+  followUp?: string;
+  search?: string;
+  showClosed?: boolean;
+  source?: string;
+  status?: string;
+  vehicleId?: string;
+  view?: PipelineViewMode;
+};
+
+export function buildPipelineHref(filters: PipelineHrefFilters): string {
+  const searchParams = new URLSearchParams();
+
+  if (filters.search) {
+    searchParams.set("search", filters.search);
+  }
+
+  if (filters.source && filters.source !== "all") {
+    searchParams.set("source", filters.source);
+  }
+
+  if (filters.status && filters.status !== "all") {
+    searchParams.set("status", filters.status);
+  }
+
+  if (filters.vehicleId) {
+    searchParams.set("vehicleId", filters.vehicleId);
+  }
+
+  if (filters.assignedToId) {
+    searchParams.set("assignedToId", filters.assignedToId);
+  }
+
+  if (filters.followUp && filters.followUp !== "all") {
+    searchParams.set("followUp", filters.followUp);
+  }
+
+  if (filters.view) {
+    searchParams.set("view", filters.view);
+  }
+
+  if (filters.showClosed) {
+    searchParams.set("showClosed", "true");
+  }
+
+  const queryString = searchParams.toString();
+
+  return queryString ? `/admin/pipeline?${queryString}` : "/admin/pipeline";
+}
+
+export function countActivePipelineFilters(input: {
+  assignedToId: string;
+  followUp: string;
+  search: string;
+  showClosed: boolean;
+  source: string;
+  status: string;
+  vehicleId: string;
+  view: PipelineViewMode;
+}): number {
+  let count = 0;
+
+  if (input.search.trim()) {
+    count += 1;
+  }
+
+  if (input.source !== "all") {
+    count += 1;
+  }
+
+  if (input.view === "list" && input.status !== "all") {
+    count += 1;
+  }
+
+  if (input.vehicleId) {
+    count += 1;
+  }
+
+  if (input.assignedToId) {
+    count += 1;
+  }
+
+  if (input.followUp !== "all") {
+    count += 1;
+  }
+
+  if (input.view === "board" && input.showClosed) {
+    count += 1;
+  }
+
+  return count;
+}
+
+export function getAssignedDisplayName(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+
+  if (!trimmed) {
+    return "Unassigned";
+  }
+
+  return trimmed.split(" ")[0] ?? trimmed;
+}
+
+export function getAssigneeInitials(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+
+  if (!trimmed) {
+    return "?";
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
 }

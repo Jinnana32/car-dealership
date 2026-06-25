@@ -159,8 +159,8 @@ export default async function InquiriesReportPage({
 
         {result.rows.length === 0 ? (
           <ReportEmptyState
-            actionHref="/admin/inquiries"
-            actionLabel="Open Inquiries"
+            actionHref="/admin/pipeline?view=list"
+            actionLabel="Open pipeline"
             description="Adjust filters or create more leads to build the inquiry report."
             title="No inquiries match these filters"
           />

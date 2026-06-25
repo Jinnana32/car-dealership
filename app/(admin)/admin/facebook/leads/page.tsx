@@ -66,7 +66,7 @@ export default async function FacebookLeadsPage({
               <Link href="/admin/facebook/lead-forms">Lead Form Mappings</Link>
             </Button>
             <Button asChild>
-              <Link href="/admin/inquiries">Open Inquiries</Link>
+              <Link href="/admin/pipeline?view=list">Open inquiries</Link>
             </Button>
           </>
         }

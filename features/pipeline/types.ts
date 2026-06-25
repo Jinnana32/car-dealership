@@ -3,6 +3,18 @@ import type { Database } from "@/lib/supabase/database.types";
 export type PipelineViewMode = "board" | "list";
 export type InquiryFollowUpBucket = "overdue" | "today" | "future" | "none";
 export type InquiryFollowUpFilter = "all" | InquiryFollowUpBucket;
+export type PipelineSummary = {
+  activeCount: number;
+  closedValue: number;
+  overdueCount: number;
+  pipeValue: number;
+  unassignedCount: number;
+};
+
+export type PipelineColumnSummary = {
+  count: number;
+  totalValue: number;
+};
 export type PipelineStageKey =
   Database["public"]["Tables"]["inquiries"]["Row"]["status"];
 export type LostReason =

@@ -408,7 +408,7 @@ export function ManualLeadForm({
           Create lead
         </SubmitButton>
         <Button asChild type="button" variant="outline">
-          <Link href="/admin/inquiries">Cancel</Link>
+          <Link href="/admin/pipeline?view=list">Cancel</Link>
         </Button>
       </div>
     </form>

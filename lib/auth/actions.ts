@@ -156,6 +156,7 @@ export async function updateDealershipSettingsAction(
   const parsed = dealershipSettingsSchema.safeParse({
     contact_email: formData.get("contact_email"),
     contact_phone: formData.get("contact_phone"),
+    default_financing_apr_percent: formData.get("default_financing_apr_percent"),
     default_financing_headline: formData.get("default_financing_headline"),
     default_post_location_tag: formData.get("default_post_location_tag"),
     default_sale_inclusions: formData.get("default_sale_inclusions"),

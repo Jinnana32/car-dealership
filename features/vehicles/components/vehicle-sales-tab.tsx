@@ -10,8 +10,9 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { InquirySourceBadge } from "@/features/inquiries/components/inquiry-source-badge";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
+import { RecordSalePaymentPlanFields } from "@/features/sales/components/record-sale-payment-plan-fields";
+import { SalePaymentPlanStatusBadge } from "@/features/sales/components/sale-payment-plan-status-badge";
 import { recordVehicleSale } from "@/features/sales/actions";
-import { VEHICLE_SALE_PAYMENT_TYPES } from "@/features/sales/constants";
 import type { VehicleSalesContext } from "@/features/sales/types";
 import { getVehicleSalePaymentTypeLabel } from "@/features/sales/utils";
 import { VEHICLE_DETAIL_CONTENT_NARROW_CLASS } from "@/features/vehicles/constants";
@@ -21,6 +22,8 @@ import { buildVehicleDetailPath, formatVehicleCurrency, formatVehicleDateTime } 
 type VehicleSalesTabProps = {
   canManage: boolean;
   canRecordSale: boolean;
+  defaultFinancierName: string;
+  financingAprPercent: number;
   salesContext: VehicleSalesContext;
   vehicle: Vehicle;
 };
@@ -28,6 +31,8 @@ type VehicleSalesTabProps = {
 export function VehicleSalesTab({
   canManage,
   canRecordSale,
+  defaultFinancierName,
+  financingAprPercent,
   salesContext,
   vehicle,
 }: VehicleSalesTabProps): ReactElement {
@@ -50,7 +55,18 @@ export function VehicleSalesTab({
               <p className="mt-1">
                 Payment type: {getVehicleSalePaymentTypeLabel(salesContext.sale.payment_type)}
               </p>
+              {salesContext.paymentPlan ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <SalePaymentPlanStatusBadge status={salesContext.paymentPlan.status} />
+                  <span>
+                    Balance: {formatVehicleCurrency(salesContext.paymentPlan.balance_remaining)}
+                  </span>
+                </div>
+              ) : null}
               <div className="mt-3 flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/admin/sales/${salesContext.sale.id}`}>Open sale</Link>
+                </Button>
                 {salesContext.sale.customer ? (
                   <Button asChild size="sm" variant="outline">
                     <Link href={`/admin/customers/${salesContext.sale.customer.id}`}>
@@ -120,7 +136,13 @@ export function VehicleSalesTab({
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="vehicle-sold-price">Sold price</Label>
-                      <Input id="vehicle-sold-price" name="sold_price" required type="number" />
+                      <Input
+                        defaultValue={vehicle.price ?? ""}
+                        id="vehicle-sold-price"
+                        name="sold_price"
+                        required
+                        type="number"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="vehicle-sold-at">Sold date</Label>
@@ -134,17 +156,13 @@ export function VehicleSalesTab({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="vehicle-payment-type">Payment type</Label>
-                    <Select defaultValue="" id="vehicle-payment-type" name="payment_type">
-                      <option value="">Not set</option>
-                      {VEHICLE_SALE_PAYMENT_TYPES.map((paymentType) => (
-                        <option key={paymentType} value={paymentType}>
-                          {getVehicleSalePaymentTypeLabel(paymentType)}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
+                  <RecordSalePaymentPlanFields
+                    defaultFinancierName={defaultFinancierName}
+                    defaultSoldPrice={vehicle.price}
+                    financingAprPercent={financingAprPercent}
+                    idPrefix="vehicle-sale"
+                    soldPriceFieldId="vehicle-sold-price"
+                  />
 
                   <div className="space-y-2">
                     <Label htmlFor="vehicle-sale-notes">Notes</Label>

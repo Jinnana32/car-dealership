@@ -157,8 +157,8 @@ export default async function SalesReportPage({
 
         {result.rows.length === 0 ? (
           <ReportEmptyState
-            actionHref="/admin/inquiries"
-            actionLabel="Open Inquiries"
+            actionHref="/admin/pipeline?view=list"
+            actionLabel="Open pipeline"
             description="Record a won deal from an inquiry to start building the sales report."
             title="No sales recorded yet"
           />
@@ -208,6 +208,9 @@ export default async function SalesReportPage({
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-2">
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/admin/sales/${row.id}`}>View sale</Link>
+                          </Button>
                           {row.vehicle ? (
                             <Button asChild size="sm" variant="outline">
                               <Link href={`/admin/vehicles/${row.vehicle.id}`}>Vehicle</Link>

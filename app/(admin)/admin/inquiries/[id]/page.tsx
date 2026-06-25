@@ -83,6 +83,8 @@ export default async function InquiryDetailPage({
           result.record.inquiry.assigned_to,
         )}
         canRecordSale={canRecordSales(access.membership.role)}
+        defaultFinancierName={access.dealership.name}
+        financingAprPercent={access.dealership.default_financing_apr_percent}
         memberOptions={memberOptions}
         record={result.record}
         saleRecord={saleRecord}

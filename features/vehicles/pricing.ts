@@ -20,7 +20,7 @@ export const VEHICLE_FINANCING_DISPLAY_STYLE_LABELS: Record<
 
 export const VEHICLE_FINANCING_TERM_YEAR_OPTIONS = [3, 4, 5, 6, 7] as const;
 
-export const VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS = [20, 35, 50] as const;
+export type DownPaymentInputMode = "amount" | "percent";
 
 export type VehicleFinancingTermYearOption =
   (typeof VEHICLE_FINANCING_TERM_YEAR_OPTIONS)[number];
@@ -171,23 +171,105 @@ export function formatVehicleDownPaymentDisplay(input: {
   return "N/A";
 }
 
+export function resolveDownPaymentAmount(input: {
+  cashPrice: number | null;
+  mode: DownPaymentInputMode;
+  value: number | null;
+}): {
+  amount: number | null;
+  percent: number | null;
+} {
+  if (
+    input.cashPrice === null ||
+    input.cashPrice <= 0 ||
+    input.value === null ||
+    input.value < 0
+  ) {
+    return { amount: null, percent: null };
+  }
+
+  if (input.mode === "percent") {
+    if (input.value > 100) {
+      return { amount: null, percent: null };
+    }
+
+    const amount = computeDownPaymentFromPercent(input.cashPrice, input.value);
+
+    return {
+      amount,
+      percent: input.value,
+    };
+  }
+
+  if (input.value > input.cashPrice) {
+    return { amount: null, percent: null };
+  }
+
+  return {
+    amount: Math.round(input.value),
+    percent: Math.round((input.value / input.cashPrice) * 10000) / 100,
+  };
+}
+
+export function computeFinancingPrincipal(input: {
+  cashPrice: number;
+  downPayment?: number | null;
+}): number {
+  const downPayment = input.downPayment ?? 0;
+
+  return Math.max(0, input.cashPrice - downPayment);
+}
+
 export function computeFinancingMonthlyPayment(input: {
+  aprPercent?: number | null;
   cashPrice: number;
   downPayment?: number | null;
   termYears: number;
 }): number {
-  const downPayment = input.downPayment ?? 0;
-  const financedAmount = Math.max(0, input.cashPrice - downPayment);
+  const principal = computeFinancingPrincipal({
+    cashPrice: input.cashPrice,
+    downPayment: input.downPayment,
+  });
   const months = input.termYears * 12;
 
-  if (months <= 0) {
+  if (months <= 0 || principal <= 0) {
     return 0;
   }
 
-  return Math.ceil(financedAmount / months);
+  const apr = input.aprPercent ?? 0;
+
+  if (apr <= 0) {
+    return Math.ceil(principal / months);
+  }
+
+  const monthlyRate = apr / 100 / 12;
+  const compounded = (1 + monthlyRate) ** months;
+  const payment = (principal * monthlyRate * compounded) / (compounded - 1);
+
+  return Math.ceil(payment);
+}
+
+export function computeInstallmentTotal(input: {
+  monthlyPayment: number;
+  termMonths: number;
+}): number {
+  if (input.termMonths <= 0 || input.monthlyPayment <= 0) {
+    return 0;
+  }
+
+  return Number((input.monthlyPayment * input.termMonths).toFixed(2));
+}
+
+export function computeFinancingTotalPayable(input: {
+  downPayment?: number | null;
+  monthlyPayment: number;
+  termMonths: number;
+}): number {
+  return (input.downPayment ?? 0) + computeInstallmentTotal(input);
 }
 
 export function buildFinancingTermsFromSelection(input: {
+  aprPercent?: number | null;
   cashPrice: number | null;
   downPayment?: number | null;
   downPaymentPercent?: number | null;
@@ -207,6 +289,7 @@ export function buildFinancingTermsFromSelection(input: {
 
   return uniqueYears.map((termYears) => ({
     monthly_payment: computeFinancingMonthlyPayment({
+      aprPercent: input.aprPercent,
       cashPrice: input.cashPrice as number,
       downPayment,
       termYears,

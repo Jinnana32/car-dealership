@@ -34,6 +34,7 @@ export type InquiryListItem = Inquiry & {
   lastNotePreview: string | null;
   vehicle: {
     id: string;
+    price: number | null;
     title: string;
   } | null;
 };

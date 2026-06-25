@@ -7,14 +7,20 @@ import type { ZodError } from "zod";
 import { createCustomer } from "@/features/customers/actions";
 import type { CustomerDuplicateMatch } from "@/features/customers/types";
 import {
+  getDealershipMemberOptions,
+  getInquiryById,
+  getVehicleOptions,
   searchPossibleCustomerDuplicatesInDealership,
 } from "@/features/inquiries/queries";
 import type {
+  DealershipMemberOption,
   Inquiry,
   InquiryEvent,
   InquiryInsert,
+  InquiryRecord,
   InquirySourceType,
   ManualLeadFormState,
+  VehicleOption,
 } from "@/features/inquiries/types";
 import {
   assignmentUpdateSchema,
@@ -25,7 +31,13 @@ import {
   searchPossibleCustomerDuplicatesSchema,
   updateInquirySchema,
 } from "@/features/inquiries/validators";
-import { canCreateLeads, canManageDealership } from "@/lib/auth/permissions";
+import {
+  canAssignInquiries,
+  canCreateLeads,
+  canManageDealership,
+  canManageInquiryRecord,
+  canRecordSales,
+} from "@/lib/auth/permissions";
 import type { AdminAccessContext } from "@/lib/auth/types";
 import { requireAdminAccessContext } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -35,6 +47,8 @@ import {
   moveInquiryToStageSchema,
   updateInquiryStatusSchema,
 } from "@/features/pipeline/validators";
+import { getVehicleSaleRecordByInquiryId } from "@/features/sales/queries";
+import type { VehicleSaleRecord } from "@/features/sales/types";
 
 type ActionResult<T> = {
   data?: T;
@@ -907,4 +921,71 @@ export async function markInquiryWon(formData: FormData): Promise<void> {
   });
   revalidatePath(redirectPath);
   redirectWithMessage(redirectPath, "success", "Inquiry marked as won.");
+}
+
+export type InquiryPanelDataResult =
+  | { type: "forbidden" }
+  | { type: "not_found" }
+  | { type: "unauthorized" }
+  | {
+      data: {
+        canAssignInquiries: boolean;
+        canManageInquiry: boolean;
+        canRecordSale: boolean;
+        defaultFinancierName: string;
+        financingAprPercent: number;
+        memberOptions: DealershipMemberOption[];
+        record: InquiryRecord;
+        saleRecord: VehicleSaleRecord | null;
+        vehicleOptions: VehicleOption[];
+      };
+      type: "ok";
+    };
+
+export async function loadInquiryPanelData(
+  inquiryId: string,
+): Promise<InquiryPanelDataResult> {
+  const access = await requireAdminAccessContext("/admin/pipeline");
+
+  if (!access) {
+    return { type: "unauthorized" };
+  }
+
+  const [result, memberOptions, vehicleOptions] = await Promise.all([
+    getInquiryById(access, inquiryId),
+    getDealershipMemberOptions(access),
+    getVehicleOptions(access),
+  ]);
+
+  if (result.type === "forbidden") {
+    return { type: "forbidden" };
+  }
+
+  if (result.type === "not_found") {
+    return { type: "not_found" };
+  }
+
+  const saleRecord = await getVehicleSaleRecordByInquiryId(
+    access,
+    result.record.inquiry.id,
+  );
+
+  return {
+    data: {
+      canAssignInquiries: canAssignInquiries(access.membership.role),
+      canManageInquiry: canManageInquiryRecord(
+        access.membership.role,
+        access.profile.id,
+        result.record.inquiry.assigned_to,
+      ),
+      canRecordSale: canRecordSales(access.membership.role),
+      defaultFinancierName: access.dealership.name,
+      financingAprPercent: access.dealership.default_financing_apr_percent,
+      memberOptions,
+      record: result.record,
+      saleRecord,
+      vehicleOptions,
+    },
+    type: "ok",
+  };
 }

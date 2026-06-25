@@ -16,7 +16,7 @@ export function InquiryNotFoundState(): ReactElement {
             The inquiry you are looking for is not available.
           </p>
           <Button asChild variant="outline">
-            <Link href="/admin/inquiries">Back to inquiries</Link>
+            <Link href="/admin/pipeline?view=list">Back to pipeline</Link>
           </Button>
         </CardContent>
       </Card>

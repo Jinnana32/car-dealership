@@ -64,7 +64,8 @@ export type VehicleFormValues = {
   description: string;
   engine_size: string;
   engine_type: string;
-  financing_down_payment_percent: string;
+  financing_down_payment_mode: string;
+  financing_down_payment_value: string;
   financing_enabled: string;
   financing_monthly_terms: string;
   fuel_type: string;

@@ -258,7 +258,7 @@ export async function getInquiriesList(
     vehicleIds.length > 0
       ? supabase
           .from("vehicles")
-          .select("id, title")
+          .select("id, title, price")
           .eq("dealership_id", access.dealership.id)
           .in("id", vehicleIds)
       : Promise.resolve({ data: [] }),

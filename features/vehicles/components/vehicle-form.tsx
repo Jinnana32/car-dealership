@@ -43,6 +43,7 @@ import {
 
 type VehicleFormProps = {
   catalog: VehicleCatalog;
+  financingAprPercent: number;
   mode: "create" | "edit";
   vehicle?: Vehicle;
 };
@@ -104,14 +105,20 @@ function getVehicleFormValues(
       state.values?.engine_type ??
       vehicle?.engine_type ??
       parsedEngine.engine_type,
-    financing_down_payment_percent:
-      state.values?.financing_down_payment_percent ??
+    financing_down_payment_mode:
+      state.values?.financing_down_payment_mode ??
+      (vehicle?.financing_down_payment !== null && vehicle?.financing_down_payment !== undefined
+        ? "amount"
+        : "percent"),
+    financing_down_payment_value:
+      state.values?.financing_down_payment_value ??
       stringifyVehicleValue(
-        inferDownPaymentPercent({
-          cashPrice: vehicle?.price ?? null,
-          downPaymentAmount: vehicle?.financing_down_payment ?? null,
-          downPaymentPercent: vehicle?.financing_down_payment_percent ?? null,
-        }),
+        vehicle?.financing_down_payment ??
+          inferDownPaymentPercent({
+            cashPrice: vehicle?.price ?? null,
+            downPaymentAmount: vehicle?.financing_down_payment ?? null,
+            downPaymentPercent: vehicle?.financing_down_payment_percent ?? null,
+          }),
       ),
     financing_enabled:
       state.values?.financing_enabled ??
@@ -180,6 +187,7 @@ function FacebookHiddenFields({
 
 export function VehicleForm({
   catalog,
+  financingAprPercent,
   mode,
   vehicle,
 }: VehicleFormProps): ReactElement {
@@ -409,6 +417,7 @@ export function VehicleForm({
         <CardContent>
           <VehicleFinancingFields
             fieldErrors={state.fieldErrors}
+            financingAprPercent={financingAprPercent}
             formValues={formValues}
             vehicle={vehicle}
           />

@@ -119,6 +119,7 @@ export type Database = {
           contact_email: string | null;
           contact_phone: string | null;
           created_at: string;
+          default_financing_apr_percent: number;
           default_financing_headline: string | null;
           default_post_location_tag: string | null;
           default_sale_inclusions: string[];
@@ -134,6 +135,7 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
+          default_financing_apr_percent?: number;
           default_financing_headline?: string | null;
           default_post_location_tag?: string | null;
           default_sale_inclusions?: string[];
@@ -149,6 +151,7 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
+          default_financing_apr_percent?: number;
           default_financing_headline?: string | null;
           default_post_location_tag?: string | null;
           default_sale_inclusions?: string[];
@@ -1065,6 +1068,195 @@ export type Database = {
           storage_path?: string | null;
           url?: string;
           vehicle_id?: string;
+        };
+        Relationships: [];
+      };
+      sale_payment_plan_events: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          dealership_id: string;
+          event_type: "created" | "updated";
+          id: string;
+          metadata: Json;
+          plan_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          dealership_id: string;
+          event_type: "created" | "updated";
+          id?: string;
+          metadata?: Json;
+          plan_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          dealership_id?: string;
+          event_type?: "created" | "updated";
+          id?: string;
+          metadata?: Json;
+          plan_id?: string;
+        };
+        Relationships: [];
+      };
+      sale_payment_plans: {
+        Row: {
+          apr_percent: number | null;
+          balance_remaining: number;
+          created_at: string;
+          dealership_id: string;
+          down_payment_amount: number;
+          financed_amount: number | null;
+          financier_name: string | null;
+          id: string;
+          monthly_payment: number | null;
+          notes: string | null;
+          plan_type: "cash" | "financing" | "mixed" | "trade_in";
+          sale_id: string;
+          status:
+            | "cancelled"
+            | "overdue"
+            | "paid_in_full"
+            | "partially_paid"
+            | "pending";
+          term_months: number | null;
+          total_amount: number;
+          trade_in_amount: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          apr_percent?: number | null;
+          balance_remaining: number;
+          created_at?: string;
+          dealership_id: string;
+          down_payment_amount?: number;
+          financed_amount?: number | null;
+          financier_name?: string | null;
+          id?: string;
+          monthly_payment?: number | null;
+          notes?: string | null;
+          plan_type: "cash" | "financing" | "mixed" | "trade_in";
+          sale_id: string;
+          status:
+            | "cancelled"
+            | "overdue"
+            | "paid_in_full"
+            | "partially_paid"
+            | "pending";
+          term_months?: number | null;
+          total_amount: number;
+          trade_in_amount?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          apr_percent?: number | null;
+          balance_remaining?: number;
+          created_at?: string;
+          dealership_id?: string;
+          down_payment_amount?: number;
+          financed_amount?: number | null;
+          financier_name?: string | null;
+          id?: string;
+          monthly_payment?: number | null;
+          notes?: string | null;
+          plan_type?: "cash" | "financing" | "mixed" | "trade_in";
+          sale_id?: string;
+          status?:
+            | "cancelled"
+            | "overdue"
+            | "paid_in_full"
+            | "partially_paid"
+            | "pending";
+          term_months?: number | null;
+          total_amount?: number;
+          trade_in_amount?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sale_payment_schedule_items: {
+        Row: {
+          amount_due: number;
+          created_at: string;
+          dealership_id: string;
+          due_at: string;
+          id: string;
+          paid_payment_id: string | null;
+          plan_id: string;
+          status: "overdue" | "paid" | "pending" | "waived";
+          updated_at: string;
+        };
+        Insert: {
+          amount_due: number;
+          created_at?: string;
+          dealership_id: string;
+          due_at: string;
+          id?: string;
+          paid_payment_id?: string | null;
+          plan_id: string;
+          status?: "overdue" | "paid" | "pending" | "waived";
+          updated_at?: string;
+        };
+        Update: {
+          amount_due?: number;
+          created_at?: string;
+          dealership_id?: string;
+          due_at?: string;
+          id?: string;
+          paid_payment_id?: string | null;
+          plan_id?: string;
+          status?: "overdue" | "paid" | "pending" | "waived";
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sale_payments: {
+        Row: {
+          amount: number;
+          created_at: string;
+          dealership_id: string;
+          id: string;
+          notes: string | null;
+          paid_at: string;
+          payment_method: "bank_transfer" | "cash" | "check" | "gcash" | "other";
+          plan_id: string | null;
+          recorded_by: string | null;
+          reference_number: string | null;
+          sale_id: string;
+          status: "posted" | "voided";
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          created_at?: string;
+          dealership_id: string;
+          id?: string;
+          notes?: string | null;
+          paid_at?: string;
+          payment_method: "bank_transfer" | "cash" | "check" | "gcash" | "other";
+          plan_id?: string | null;
+          recorded_by?: string | null;
+          reference_number?: string | null;
+          sale_id: string;
+          status?: "posted" | "voided";
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string;
+          dealership_id?: string;
+          id?: string;
+          notes?: string | null;
+          paid_at?: string;
+          payment_method?: "bank_transfer" | "cash" | "check" | "gcash" | "other";
+          plan_id?: string | null;
+          recorded_by?: string | null;
+          reference_number?: string | null;
+          sale_id?: string;
+          status?: "posted" | "voided";
+          updated_at?: string;
         };
         Relationships: [];
       };

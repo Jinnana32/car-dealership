@@ -28,6 +28,18 @@ export const dealershipSettingsSchema = z.object({
     .trim()
     .max(50, "Contact phone must be 50 characters or fewer.")
     .transform((value) => value || null),
+  default_financing_apr_percent: z.preprocess((value) => {
+    if (value === null || value === undefined || value === "") {
+      return 0;
+    }
+
+    const parsed = Number(value);
+
+    return Number.isNaN(parsed) ? value : parsed;
+  }, z
+    .number()
+    .min(0, "APR cannot be negative.")
+    .max(100, "APR cannot exceed 100%.")),
   default_financing_headline: z
     .string()
     .trim()

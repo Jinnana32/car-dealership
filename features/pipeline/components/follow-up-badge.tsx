@@ -15,21 +15,41 @@ const followUpStyles: Record<InquiryFollowUpBucket, string> = {
 
 type FollowUpBadgeProps = {
   bucket: InquiryFollowUpBucket;
+  compact?: boolean;
   value: string | null;
 };
 
+function getCompactFollowUpLabel(
+  bucket: InquiryFollowUpBucket,
+  value: string | null,
+): string {
+  const label = getFollowUpBucketLabel(bucket);
+
+  if (!value) {
+    return label;
+  }
+
+  if (bucket === "future") {
+    return formatCrmDate(value);
+  }
+
+  return label;
+}
+
 export function FollowUpBadge({
   bucket,
+  compact = false,
   value,
 }: FollowUpBadgeProps): ReactElement {
-  const label = getFollowUpBucketLabel(bucket);
+  const label = compact ? getCompactFollowUpLabel(bucket, value) : getFollowUpBucketLabel(bucket);
 
   return (
     <Badge
       variant="outline"
-      className={cn("border px-2.5 py-1", followUpStyles[bucket])}
+      className={cn("max-w-full truncate border px-2 py-0.5 text-xs", followUpStyles[bucket])}
+      title={value ? `${label} · ${formatCrmDate(value)}` : label}
     >
-      {value ? `${label} · ${formatCrmDate(value)}` : label}
+      {compact ? label : value ? `${label} · ${formatCrmDate(value)}` : label}
     </Badge>
   );
 }

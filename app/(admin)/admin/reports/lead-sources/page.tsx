@@ -103,8 +103,8 @@ export default async function LeadSourcesReportPage({
 
         {result.rows.every((row) => row.totalInquiries === 0) ? (
           <ReportEmptyState
-            actionHref="/admin/inquiries"
-            actionLabel="Open Inquiries"
+            actionHref="/admin/pipeline?view=list"
+            actionLabel="Open pipeline"
             description="Lead source performance will appear after inquiries start flowing through the CRM."
             title="No lead source data yet"
           />

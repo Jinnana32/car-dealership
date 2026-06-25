@@ -224,6 +224,28 @@ export default async function SettingsPage({
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="default_financing_apr_percent">
+                      In-house financing APR (%)
+                    </Label>
+                    <Input
+                      defaultValue={access.dealership.default_financing_apr_percent}
+                      disabled={!dealershipCanBeManaged}
+                      id="default_financing_apr_percent"
+                      inputMode="decimal"
+                      max="100"
+                      min="0"
+                      name="default_financing_apr_percent"
+                      placeholder="12"
+                      step="0.01"
+                      type="number"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Used to compute monthly payments for inventory and sales. Agents show price
+                      and monthly only on posts — APR stays internal.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="default_financing_headline">Default financing headline</Label>
                     <Input
                       id="default_financing_headline"

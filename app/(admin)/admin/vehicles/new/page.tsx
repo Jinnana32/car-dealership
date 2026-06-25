@@ -37,6 +37,7 @@ export default async function NewVehiclePage(): Promise<ReactElement | null> {
     >
       <VehicleForm
         catalog={getDealershipVehicleCatalog(access.dealership.vehicle_catalog)}
+        financingAprPercent={access.dealership.default_financing_apr_percent}
         mode="create"
       />
     </PageContent>

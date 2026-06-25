@@ -84,6 +84,7 @@ export default async function EditVehiclePage({
       >
         <VehicleForm
           catalog={getDealershipVehicleCatalog(access.dealership.vehicle_catalog)}
+          financingAprPercent={access.dealership.default_financing_apr_percent}
           mode="edit"
           vehicle={result.record.vehicle}
         />

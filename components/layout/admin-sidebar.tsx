@@ -11,7 +11,7 @@ import {
   LayoutDashboard,
   Lock,
   Megaphone,
-  MessagesSquare,
+  Receipt,
   Settings,
   UsersRound,
 } from "lucide-react";
@@ -33,8 +33,8 @@ const navigationIcons: Record<AdminNavigationIcon, typeof LayoutDashboard> = {
   customers: UsersRound,
   dashboard: LayoutDashboard,
   facebookSalesHub: Megaphone,
-  inquiries: MessagesSquare,
   pipeline: KanbanSquare,
+  sales: Receipt,
   settings: Settings,
   vehicles: CarFront,
 };
@@ -96,7 +96,9 @@ export function AdminSidebar({
                   const isActive =
                     !item.disabled &&
                     (pathname === item.href ||
-                      pathname.startsWith(`${item.href}/`));
+                      pathname.startsWith(`${item.href}/`) ||
+                      (item.href === "/admin/pipeline" &&
+                        pathname.startsWith("/admin/inquiries")));
 
                   if (item.disabled) {
                     return (

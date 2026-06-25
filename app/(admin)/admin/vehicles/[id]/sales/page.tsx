@@ -45,6 +45,8 @@ export default async function VehicleSalesPage({
       <VehicleSalesTab
         canManage={canManageVehicles(context.access.membership.role)}
         canRecordSale={canRecordSales(context.access.membership.role)}
+        defaultFinancierName={context.access.dealership.name}
+        financingAprPercent={context.access.dealership.default_financing_apr_percent}
         salesContext={salesContext}
         vehicle={context.record.vehicle}
       />

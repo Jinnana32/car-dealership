@@ -12,7 +12,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   buildFinancingTermsFromSelection,
-  computeDownPaymentFromPercent,
+  resolveDownPaymentAmount,
   type VehicleFinancingTerm,
 } from "@/features/vehicles/pricing";
 import { formatEngineValue } from "@/features/vehicles/engine";
@@ -144,7 +144,8 @@ function extractVehicleFormValues(formData: FormData): VehicleFormValues {
     description: getStringValue(formData, "description"),
     engine_size: getStringValue(formData, "engine_size"),
     engine_type: getStringValue(formData, "engine_type"),
-    financing_down_payment_percent: getStringValue(formData, "financing_down_payment_percent"),
+    financing_down_payment_mode: getStringValue(formData, "financing_down_payment_mode"),
+    financing_down_payment_value: getStringValue(formData, "financing_down_payment_value"),
     financing_enabled: getCheckboxFormValue(formData, "financing_enabled"),
     financing_monthly_terms: getStringValue(formData, "financing_monthly_terms"),
     fuel_type: getStringValue(formData, "fuel_type"),
@@ -176,22 +177,48 @@ function extractFinancingTermYears(formData: FormData): number[] {
   )].sort((left, right) => left - right);
 }
 
-function applyVehicleFinancingPayload<T extends z.infer<typeof createVehicleSchema>>(
-  data: T,
-  formData: FormData,
-): T & {
+type VehicleFormPayload = Omit<
+  z.infer<typeof createVehicleSchema>,
+  "financing_down_payment_mode" | "financing_down_payment_value" | "financing_monthly_terms"
+>;
+
+type VehicleFinancingPayload = VehicleFormPayload & {
   financing_down_payment: number | null;
   financing_down_payment_label: null;
   financing_down_payment_percent: number | null;
   financing_headline: null;
   financing_monthly_terms: VehicleFinancingTerm[];
   financing_notes: null;
-} {
+};
+
+function stripVehicleFinancingFormFields(
+  data: z.infer<typeof createVehicleSchema>,
+): VehicleFormPayload {
+  const {
+    financing_down_payment_mode: _downPaymentMode,
+    financing_down_payment_value: _downPaymentValue,
+    financing_monthly_terms: _financingMonthlyTerms,
+    ...vehicleData
+  } = data;
+
+  void _downPaymentMode;
+  void _downPaymentValue;
+  void _financingMonthlyTerms;
+
+  return vehicleData;
+}
+
+function applyVehicleFinancingPayload(
+  data: z.infer<typeof createVehicleSchema>,
+  formData: FormData,
+  financingAprPercent: number,
+): VehicleFinancingPayload {
   const termYears = extractFinancingTermYears(formData);
+  const vehicleData = stripVehicleFinancingFormFields(data);
 
   if (!data.financing_enabled) {
     return {
-      ...data,
+      ...vehicleData,
       financing_down_payment: null,
       financing_down_payment_percent: null,
       financing_down_payment_label: null,
@@ -201,20 +228,22 @@ function applyVehicleFinancingPayload<T extends z.infer<typeof createVehicleSche
     };
   }
 
-  const downPayment = computeDownPaymentFromPercent(
-    data.price,
-    data.financing_down_payment_percent,
-  );
+  const downPayment = resolveDownPaymentAmount({
+    cashPrice: data.price,
+    mode: data.financing_down_payment_mode,
+    value: data.financing_down_payment_value,
+  });
 
   return {
-    ...data,
-    financing_down_payment: downPayment,
-    financing_down_payment_percent: data.financing_down_payment_percent,
+    ...vehicleData,
+    financing_down_payment: downPayment.amount,
+    financing_down_payment_percent: downPayment.percent,
     financing_down_payment_label: null,
     financing_headline: null,
     financing_monthly_terms: buildFinancingTermsFromSelection({
+      aprPercent: financingAprPercent,
       cashPrice: data.price,
-      downPayment,
+      downPayment: downPayment.amount,
       selectedTermYears: termYears,
     }),
     financing_notes: null,
@@ -262,11 +291,31 @@ function validateFinancingTermSelection(
     };
   }
 
-  if (data.financing_down_payment_percent === null) {
+  if (data.financing_down_payment_value === null) {
     return {
       error: "Please correct the highlighted fields.",
       fieldErrors: {
-        financing_down_payment_percent: ["Select a down payment percentage."],
+        financing_down_payment_value: ["Enter a down payment amount or percentage."],
+      },
+      values,
+    };
+  }
+
+  const downPayment = resolveDownPaymentAmount({
+    cashPrice: data.price,
+    mode: data.financing_down_payment_mode,
+    value: data.financing_down_payment_value,
+  });
+
+  if (downPayment.amount === null) {
+    return {
+      error: "Please correct the highlighted fields.",
+      fieldErrors: {
+        financing_down_payment_value: [
+          data.financing_down_payment_mode === "percent"
+            ? "Enter a down payment percentage between 0 and 100."
+            : "Enter a down payment amount that does not exceed the cash price.",
+        ],
       },
       values,
     };
@@ -525,7 +574,13 @@ export async function createVehicle(
     });
 
     const insertPayload: VehicleInsert = {
-      ...applyVehicleEnginePayload(applyVehicleFinancingPayload(parsed.data, formData)),
+      ...applyVehicleEnginePayload(
+        applyVehicleFinancingPayload(
+          parsed.data,
+          formData,
+          access.dealership.default_financing_apr_percent,
+        ),
+      ),
       condition_summary: null,
       created_by: access.profile.id,
       dealership_id: access.dealership.id,
@@ -630,7 +685,13 @@ export async function updateVehicle(
     });
 
     const updatePayload = {
-      ...applyVehicleEnginePayload(applyVehicleFinancingPayload(parsed.data, formData)),
+      ...applyVehicleEnginePayload(
+        applyVehicleFinancingPayload(
+          parsed.data,
+          formData,
+          access.dealership.default_financing_apr_percent,
+        ),
+      ),
       condition_summary: existingVehicle.condition_summary,
       financing_display_style: existingVehicle.financing_display_style,
       is_price_negotiable: existingVehicle.is_price_negotiable,

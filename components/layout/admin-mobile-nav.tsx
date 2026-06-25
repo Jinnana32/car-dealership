@@ -21,7 +21,10 @@ export function AdminMobileNav({
       <div className="flex gap-2 overflow-x-auto pb-1">
         {navigationItems.map((item) => {
           const isActive =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+            pathname === item.href ||
+            pathname.startsWith(`${item.href}/`) ||
+            (item.href === "/admin/pipeline" &&
+              pathname.startsWith("/admin/inquiries"));
 
           return (
             <Link

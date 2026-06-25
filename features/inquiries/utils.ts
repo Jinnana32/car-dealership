@@ -8,6 +8,7 @@ import type {
   InquiryStatus,
   PaymentPreference,
 } from "@/features/inquiries/types";
+import { buildPipelineHref } from "@/features/pipeline/utils";
 
 export function formatCrmDate(value: string | null): string {
   if (!value) {
@@ -89,4 +90,27 @@ export function buildVehicleSummaryLine(input: {
 
 export function normalizeSearchValue(value: string): string {
   return value.trim().toLowerCase();
+}
+
+export type InquiryListHrefFilters = {
+  assignedToId?: string;
+  followUp?: string;
+  search?: string;
+  source?: string;
+  status?: string;
+  vehicleId?: string;
+};
+
+/** @deprecated Use buildPipelineHref with view "list" instead. */
+export function buildInquiriesHref(filters: InquiryListHrefFilters): string {
+  return buildPipelineHref({
+    assignedToId: filters.assignedToId,
+    followUp: filters.followUp,
+    search: filters.search,
+    showClosed: true,
+    source: filters.source,
+    status: filters.status,
+    vehicleId: filters.vehicleId,
+    view: "list",
+  });
 }

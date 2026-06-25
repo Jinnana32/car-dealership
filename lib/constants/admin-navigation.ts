@@ -1,5 +1,5 @@
 import type { AppRole } from "@/lib/auth/types";
-import { canUseAiSalesAnalyst, canViewReports } from "@/lib/auth/permissions";
+import { canUseAiSalesAnalyst, canViewReports, canViewSales } from "@/lib/auth/permissions";
 
 export type AdminNavigationIcon =
   | "aiSalesAnalyst"
@@ -7,9 +7,9 @@ export type AdminNavigationIcon =
   | "customers"
   | "dashboard"
   | "facebookSalesHub"
-  | "inquiries"
   | "pipeline"
   | "reports"
+  | "sales"
   | "settings"
   | "vehicles";
 
@@ -46,6 +46,13 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
           label: "Reports",
         }
       : null;
+  const salesItem: AdminNavigationItem | null = canViewSales(role)
+    ? {
+        href: "/admin/sales",
+        icon: "sales",
+        label: "Sales",
+      }
+    : null;
 
   return {
     mobileItems: [
@@ -64,11 +71,7 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
         icon: "pipeline",
         label: "Pipeline",
       },
-      {
-        href: "/admin/inquiries",
-        icon: "inquiries",
-        label: "Inquiries",
-      },
+      ...(salesItem ? [salesItem] : []),
       {
         href: "/admin/customers",
         icon: "customers",
@@ -110,11 +113,7 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
             icon: "pipeline",
             label: "Pipeline",
           },
-          {
-            href: "/admin/inquiries",
-            icon: "inquiries",
-            label: "Inquiries",
-          },
+          ...(salesItem ? [salesItem] : []),
           {
             href: "/admin/customers",
             icon: "customers",

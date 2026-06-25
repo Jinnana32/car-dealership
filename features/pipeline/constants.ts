@@ -103,3 +103,48 @@ export const PIPELINE_VIEW_MODES = [
   "board",
   "list",
 ] as const;
+
+export const PIPELINE_STAGE_COLORS = {
+  contacted: {
+    header: "bg-sky-600",
+    headerMuted: "text-sky-100",
+    headerText: "text-white",
+    priceBadge: "bg-sky-50 text-sky-800",
+  },
+  lost: {
+    header: "bg-zinc-500",
+    headerMuted: "text-zinc-200",
+    headerText: "text-white",
+    priceBadge: "bg-zinc-100 text-zinc-700",
+  },
+  negotiation: {
+    header: "bg-amber-600",
+    headerMuted: "text-amber-100",
+    headerText: "text-white",
+    priceBadge: "bg-amber-50 text-amber-900",
+  },
+  new: {
+    header: "bg-slate-600",
+    headerMuted: "text-slate-200",
+    headerText: "text-white",
+    priceBadge: "bg-slate-100 text-slate-800",
+  },
+  reserved: {
+    header: "bg-red-700",
+    headerMuted: "text-red-100",
+    headerText: "text-white",
+    priceBadge: "bg-red-50 text-red-800",
+  },
+  viewing_scheduled: {
+    header: "bg-violet-600",
+    headerMuted: "text-violet-100",
+    headerText: "text-white",
+    priceBadge: "bg-violet-50 text-violet-800",
+  },
+  won: {
+    header: "bg-emerald-600",
+    headerMuted: "text-emerald-100",
+    headerText: "text-white",
+    priceBadge: "bg-emerald-50 text-emerald-800",
+  },
+} as const;

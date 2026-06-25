@@ -48,6 +48,10 @@ export function canRecordSales(role: AppRole): boolean {
   return role === "owner" || role === "admin" || role === "sales_agent";
 }
 
+export function canViewSales(role: AppRole): boolean {
+  return canRecordSales(role);
+}
+
 export function canViewReports(role: AppRole): boolean {
   return role === "owner" || role === "admin";
 }

@@ -19,11 +19,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { SalesCollectionsSummary } from "@/features/sales/types";
+import { formatVehicleCurrency } from "@/features/vehicles/utils";
 import { getRoleLabel } from "@/lib/auth/permissions";
 import type { AdminAccessContext } from "@/lib/auth/types";
 
 type DashboardOverviewProps = {
   access: AdminAccessContext;
+  collections: SalesCollectionsSummary | null;
 };
 
 const inventoryTabs = [
@@ -58,6 +61,7 @@ const quickActions = [
 
 export function DashboardOverview({
   access,
+  collections,
 }: DashboardOverviewProps): ReactElement {
   return (
     <PageContent
@@ -69,7 +73,7 @@ export function DashboardOverview({
             <Link href="/admin/vehicles">View Vehicles</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/admin/inquiries">View Inquiries</Link>
+            <Link href="/admin/pipeline?view=list">View pipeline</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/admin/settings">Open Settings</Link>
@@ -232,6 +236,33 @@ export function DashboardOverview({
         </div>
 
         <div className="space-y-6">
+          {collections && (collections.overdueCount > 0 || collections.openBalanceTotal > 0) ? (
+            <section className="rounded-[20px] border border-border bg-white p-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-semibold text-foreground">Collections</h2>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/admin/sales">Open sales</Link>
+                </Button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                {collections.overdueCount > 0 ? (
+                  <p className="font-medium text-amber-700">
+                    {collections.overdueCount} overdue balance
+                    {collections.overdueCount === 1 ? "" : "s"}
+                  </p>
+                ) : null}
+                {collections.openBalanceTotal > 0 ? (
+                  <p className="text-muted-foreground">
+                    Open balance{" "}
+                    <span className="font-semibold text-foreground">
+                      {formatVehicleCurrency(collections.openBalanceTotal)}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
           <section className="rounded-[20px] border border-border bg-white p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base font-semibold text-foreground">
