@@ -128,6 +128,7 @@ export type Database = {
           name: string;
           slug: string;
           updated_at: string;
+          vehicle_catalog: Json;
         };
         Insert: {
           contact_email?: string | null;
@@ -142,6 +143,7 @@ export type Database = {
           name: string;
           slug: string;
           updated_at?: string;
+          vehicle_catalog?: Json;
         };
         Update: {
           contact_email?: string | null;
@@ -156,6 +158,7 @@ export type Database = {
           name?: string;
           slug?: string;
           updated_at?: string;
+          vehicle_catalog?: Json;
         };
         Relationships: [];
       };
@@ -1125,6 +1128,8 @@ export type Database = {
           dealership_id: string;
           description: string | null;
           engine: string | null;
+          engine_size: string | null;
+          engine_type: string | null;
           featured_image_url: string | null;
           financing_display_style: "compact" | "detailed" | "headline_only";
           financing_down_payment: number | null;
@@ -1167,6 +1172,8 @@ export type Database = {
           dealership_id: string;
           description?: string | null;
           engine?: string | null;
+          engine_size?: string | null;
+          engine_type?: string | null;
           featured_image_url?: string | null;
           financing_display_style?: "compact" | "detailed" | "headline_only";
           financing_down_payment?: number | null;
@@ -1209,6 +1216,8 @@ export type Database = {
           dealership_id?: string;
           description?: string | null;
           engine?: string | null;
+          engine_size?: string | null;
+          engine_type?: string | null;
           featured_image_url?: string | null;
           financing_display_style?: "compact" | "detailed" | "headline_only";
           financing_down_payment?: number | null;

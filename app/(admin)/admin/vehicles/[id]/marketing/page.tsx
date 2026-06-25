@@ -8,11 +8,7 @@ import {
 import { VehicleMarketingTab } from "@/features/vehicles/components/vehicle-marketing-tab";
 import { getVehicleFacebookContext } from "@/features/facebook/queries";
 import { getVehicleDetailPageContext } from "@/features/vehicles/queries";
-import {
-  canCreateFacebookContent,
-  canGenerateBrochures,
-  canPublishToFacebookPage,
-} from "@/lib/auth/permissions";
+import { canCreateFacebookContent, canGenerateBrochures, canManageVehicles, canPublishToFacebookPage } from "@/lib/auth/permissions";
 
 type VehicleMarketingPageProps = {
   params: Promise<{
@@ -55,6 +51,7 @@ export default async function VehicleMarketingPage({
       />
       <VehicleMarketingTab
         brochureExports={brochureExports}
+        canEditMarketing={canManageVehicles(context.access.membership.role)}
         canGenerateBrochures={canGenerateBrochures(context.access.membership.role)}
         canGenerateFacebookContent={canCreateFacebookContent(context.access.membership.role)}
         canPublishToFacebook={canPublishToFacebookPage(context.access.membership.role)}

@@ -50,33 +50,6 @@ function slugify(value) {
     .replace(/-{2,}/g, "-");
 }
 
-function parseCurrencyAmount(raw) {
-  if (!raw) {
-    return null;
-  }
-
-  const normalized = raw.toLowerCase().replace(/,/g, "").trim();
-  const match = normalized.match(/([\d.]+)\s*(k|m)?/);
-
-  if (!match) {
-    return null;
-  }
-
-  let amount = Number.parseFloat(match[1]);
-
-  if (!Number.isFinite(amount)) {
-    return null;
-  }
-
-  if (match[2] === "k") {
-    amount *= 1_000;
-  } else if (match[2] === "m") {
-    amount *= 1_000_000;
-  }
-
-  return Math.round(amount);
-}
-
 function parsePesoAmount(line) {
   const match = line.match(/₱\s*([\d,]+(?:\.\d+)?)/i);
 

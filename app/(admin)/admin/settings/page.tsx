@@ -14,6 +14,10 @@ import {
 import { canManageDealership, getRoleLabel } from "@/lib/auth/permissions";
 import { getAdminAccessContext } from "@/lib/auth/session";
 import { serializeTextList } from "@/features/vehicles/pricing";
+import {
+  parseVehicleCatalogInput,
+  serializeVehicleCatalog,
+} from "@/features/vehicles/catalog";
 
 type SettingsPageProps = {
   searchParams: Promise<{
@@ -241,6 +245,31 @@ export default async function SettingsPage({
                       placeholder={"LTO & HPG Verified\n3 Months Service Warranty"}
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-border bg-[#fafaf9] p-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    Vehicle make, model, and variant catalog
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Add dealership-specific options on top of the built-in catalog.
+                    Use JSON with make, model, and variant arrays.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle_catalog">Custom catalog overrides</Label>
+                  <textarea
+                    className="min-h-40 w-full rounded-xl border border-input bg-white px-3 py-2 font-mono text-sm"
+                    defaultValue={serializeVehicleCatalog(
+                      parseVehicleCatalogInput(access.dealership.vehicle_catalog),
+                    )}
+                    disabled={!dealershipCanBeManaged}
+                    id="vehicle_catalog"
+                    name="vehicle_catalog"
+                    placeholder={'{\n  "Toyota": {\n    "Innova": ["E", "G", "V"]\n  }\n}'}
+                  />
                 </div>
               </div>
 

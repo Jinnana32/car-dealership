@@ -15,17 +15,17 @@ import {
   updateVehicle,
 } from "@/features/vehicles/actions";
 import { VehicleFinancingFields } from "@/features/vehicles/components/vehicle-financing-fields";
+import { VehicleMakeModelFields } from "@/features/vehicles/components/vehicle-make-model-fields";
+import type { VehicleCatalog } from "@/features/vehicles/catalog";
 import {
   VEHICLE_BODY_TYPE_OPTIONS,
-  VEHICLE_BRAND_OPTIONS,
   VEHICLE_COLOR_OPTIONS,
   VEHICLE_FUEL_TYPE_OPTIONS,
-  VEHICLE_MODEL_OPTIONS,
   VEHICLE_AVAILABILITIES,
   VEHICLE_STATUSES,
   VEHICLE_TRANSMISSION_OPTIONS,
-  VEHICLE_VARIANT_OPTIONS,
 } from "@/features/vehicles/constants";
+import { parseEngineValue } from "@/features/vehicles/engine";
 import {
   inferDownPaymentPercent,
   serializeTextList,
@@ -42,6 +42,7 @@ import {
 } from "@/features/vehicles/utils";
 
 type VehicleFormProps = {
+  catalog: VehicleCatalog;
   mode: "create" | "edit";
   vehicle?: Vehicle;
 };
@@ -87,18 +88,22 @@ function getVehicleFormValues(
   vehicle: Vehicle | undefined,
   state: VehicleFormState,
 ): VehicleFormValues {
+  const parsedEngine = parseEngineValue(vehicle?.engine);
+
   return {
     availability: state.values?.availability ?? vehicle?.availability ?? "available",
     body_type: state.values?.body_type ?? vehicle?.body_type ?? "",
     brand: state.values?.brand ?? vehicle?.brand ?? "",
     color: state.values?.color ?? vehicle?.color ?? "",
-    condition_summary: state.values?.condition_summary ?? vehicle?.condition_summary ?? "",
     description: state.values?.description ?? vehicle?.description ?? "",
-    engine: state.values?.engine ?? vehicle?.engine ?? "",
-    financing_display_style:
-      state.values?.financing_display_style ??
-      vehicle?.financing_display_style ??
-      "detailed",
+    engine_size:
+      state.values?.engine_size ??
+      vehicle?.engine_size ??
+      parsedEngine.engine_size,
+    engine_type:
+      state.values?.engine_type ??
+      vehicle?.engine_type ??
+      parsedEngine.engine_type,
     financing_down_payment_percent:
       state.values?.financing_down_payment_percent ??
       stringifyVehicleValue(
@@ -108,19 +113,13 @@ function getVehicleFormValues(
           downPaymentPercent: vehicle?.financing_down_payment_percent ?? null,
         }),
       ),
-    financing_down_payment_label: state.values?.financing_down_payment_label ?? "",
     financing_enabled:
       state.values?.financing_enabled ??
       (vehicle?.financing_enabled ? "true" : "false"),
-    financing_headline: state.values?.financing_headline ?? "",
     financing_monthly_terms: state.values?.financing_monthly_terms ?? "",
-    financing_notes: state.values?.financing_notes ?? "",
     fuel_type: state.values?.fuel_type ?? vehicle?.fuel_type ?? "",
     highlights:
       state.values?.highlights ?? serializeTextList(vehicle?.highlights),
-    is_price_negotiable:
-      state.values?.is_price_negotiable ??
-      (vehicle?.is_price_negotiable ? "true" : "false"),
     mileage: state.values?.mileage ?? stringifyVehicleValue(vehicle?.mileage),
     model: state.values?.model ?? vehicle?.model ?? "",
     plate_number: state.values?.plate_number ?? vehicle?.plate_number ?? "",
@@ -129,9 +128,6 @@ function getVehicleFormValues(
     price: state.values?.price ?? stringifyVehicleValue(vehicle?.price),
     sale_inclusions:
       state.values?.sale_inclusions ?? serializeTextList(vehicle?.sale_inclusions),
-    show_cash_price_in_posts:
-      state.values?.show_cash_price_in_posts ??
-      (vehicle?.show_cash_price_in_posts === false ? "false" : "true"),
     slug: state.values?.slug ?? vehicle?.slug ?? "",
     status: state.values?.status ?? vehicle?.status ?? "draft",
     stock_number: state.values?.stock_number ?? vehicle?.stock_number ?? "",
@@ -183,6 +179,7 @@ function FacebookHiddenFields({
 }
 
 export function VehicleForm({
+  catalog,
   mode,
   vehicle,
 }: VehicleFormProps): ReactElement {
@@ -191,9 +188,6 @@ export function VehicleForm({
   const [state, action] = useActionState(formAction, emptyFormState);
   const formValues = getVehicleFormValues(vehicle, state);
   const formKey = JSON.stringify(formValues);
-  const brandOptions = getSelectOptions(VEHICLE_BRAND_OPTIONS, formValues.brand);
-  const modelOptions = getSelectOptions(VEHICLE_MODEL_OPTIONS, formValues.model);
-  const variantOptions = getSelectOptions(VEHICLE_VARIANT_OPTIONS, formValues.variant);
   const fuelTypeOptions = getSelectOptions(
     VEHICLE_FUEL_TYPE_OPTIONS,
     formValues.fuel_type,
@@ -228,68 +222,24 @@ export function VehicleForm({
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">Name</Label>
             <Input
               defaultValue={formValues.title}
               id="title"
               name="title"
+              placeholder="2024 Toyota Vios XLE"
               required
             />
             <FieldError message={getFieldError(state, "title")} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="brand">Brand</Label>
-            <Select
-              defaultValue={formValues.brand}
-              id="brand"
-              name="brand"
-              required
-            >
-              <option value="">Select a brand</option>
-              {brandOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <FieldError message={getFieldError(state, "brand")} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="model">Model</Label>
-            <Select
-              defaultValue={formValues.model}
-              id="model"
-              name="model"
-              required
-            >
-              <option value="">Select a model</option>
-              {modelOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <FieldError message={getFieldError(state, "model")} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="variant">Variant</Label>
-            <Select
-              defaultValue={formValues.variant}
-              id="variant"
-              name="variant"
-            >
-              <option value="">Select a variant</option>
-              {variantOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <FieldError message={getFieldError(state, "variant")} />
-          </div>
+          <VehicleMakeModelFields
+            catalog={catalog}
+            fieldErrors={state.fieldErrors}
+            initialBrand={formValues.brand}
+            initialModel={formValues.model}
+            initialVariant={formValues.variant}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="year">Year</Label>
@@ -344,25 +294,26 @@ export function VehicleForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="condition_summary">Condition summary</Label>
+            <Label htmlFor="engine_size">Engine size (L)</Label>
             <Input
-              defaultValue={formValues.condition_summary}
-              id="condition_summary"
-              name="condition_summary"
-              placeholder="Almost brand new"
+              defaultValue={formValues.engine_size}
+              id="engine_size"
+              inputMode="decimal"
+              name="engine_size"
+              placeholder="1.5"
             />
-            <FieldError message={getFieldError(state, "condition_summary")} />
+            <FieldError message={getFieldError(state, "engine_size")} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="engine">Engine</Label>
+            <Label htmlFor="engine_type">Engine type</Label>
             <Input
-              defaultValue={formValues.engine}
-              id="engine"
-              name="engine"
-              placeholder="1.3L Dual VVT-i"
+              defaultValue={formValues.engine_type}
+              id="engine_type"
+              name="engine_type"
+              placeholder="Dual VVT-i"
             />
-            <FieldError message={getFieldError(state, "engine")} />
+            <FieldError message={getFieldError(state, "engine_type")} />
           </div>
 
           <div className="space-y-2">

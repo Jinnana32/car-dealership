@@ -6,6 +6,7 @@ import { PageContent } from "@/components/layout/page-content";
 import { Button } from "@/components/ui/button";
 import { StatusToast } from "@/components/ui/status-toast";
 import { VehicleForm } from "@/features/vehicles/components/vehicle-form";
+import { getDealershipVehicleCatalog } from "@/features/vehicles/catalog";
 import { VehicleNotFoundState } from "@/features/vehicles/components/vehicle-not-found-state";
 import { getVehicleById } from "@/features/vehicles/queries";
 import { canManageVehicles } from "@/lib/auth/permissions";
@@ -81,7 +82,11 @@ export default async function EditVehiclePage({
           </Button>
         }
       >
-        <VehicleForm mode="edit" vehicle={result.record.vehicle} />
+        <VehicleForm
+          catalog={getDealershipVehicleCatalog(access.dealership.vehicle_catalog)}
+          mode="edit"
+          vehicle={result.record.vehicle}
+        />
       </PageContent>
     </>
   );

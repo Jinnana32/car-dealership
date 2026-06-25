@@ -21,12 +21,14 @@ import { FacebookPublishHistoryList } from "@/features/facebook/components/faceb
 import { VehicleFacebookPublisher } from "@/features/facebook/components/vehicle-facebook-publisher";
 import type { VehicleFacebookContext } from "@/features/facebook/types";
 import { buildPublicVehiclePath, buildVehicleFacebookReadiness } from "@/features/facebook/utils";
+import { VehicleMarketingSettingsForm } from "@/features/vehicles/components/vehicle-marketing-settings-form";
 import { VEHICLE_DETAIL_CONTENT_CLASS } from "@/features/vehicles/constants";
 import type { Vehicle, VehicleMediaWithSignedUrl } from "@/features/vehicles/types";
 import { buildVehicleDetailPath, formatVehicleDateTime } from "@/features/vehicles/utils";
 
 type VehicleMarketingTabProps = {
   brochureExports: VehicleBrochureSummary;
+  canEditMarketing: boolean;
   canGenerateBrochures: boolean;
   canGenerateFacebookContent: boolean;
   canPublishToFacebook: boolean;
@@ -38,6 +40,7 @@ type VehicleMarketingTabProps = {
 
 export function VehicleMarketingTab({
   brochureExports,
+  canEditMarketing,
   canGenerateBrochures,
   canGenerateFacebookContent,
   canPublishToFacebook,
@@ -60,6 +63,10 @@ export function VehicleMarketingTab({
 
   return (
     <div className={VEHICLE_DETAIL_CONTENT_CLASS}>
+      {canEditMarketing ? (
+        <VehicleMarketingSettingsForm redirectPath={marketingPath} vehicle={vehicle} />
+      ) : null}
+
       <Card className="rounded-[20px] border-border shadow-none">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg">Facebook readiness</CardTitle>

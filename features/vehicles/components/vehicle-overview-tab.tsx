@@ -117,7 +117,20 @@ export function VehicleOverviewTab({
                   : formatVehicleMileage(vehicle.mileage),
             },
             { label: "Condition", value: getOverviewSpecValue(vehicle.condition_summary) },
-            { label: "Engine", value: getOverviewSpecValue(vehicle.engine) },
+            {
+              label: "Engine size",
+              value: getOverviewSpecValue(
+                vehicle.engine_size ??
+                  (vehicle.engine?.match(/^([\d.]+)\s*L?/i)?.[1] ?? null),
+              ),
+            },
+            {
+              label: "Engine type",
+              value: getOverviewSpecValue(
+                vehicle.engine_type ??
+                  (vehicle.engine?.replace(/^[\d.]+\s*L?\s*/i, "").trim() || null),
+              ),
+            },
             { label: "Fuel type", value: getOverviewSpecValue(vehicle.fuel_type) },
             { label: "Transmission", value: getOverviewSpecValue(vehicle.transmission) },
           ]}

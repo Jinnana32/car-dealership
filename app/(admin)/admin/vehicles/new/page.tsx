@@ -5,6 +5,7 @@ import { UnauthorizedState } from "@/components/layout/unauthorized-state";
 import { PageContent } from "@/components/layout/page-content";
 import { Button } from "@/components/ui/button";
 import { VehicleForm } from "@/features/vehicles/components/vehicle-form";
+import { getDealershipVehicleCatalog } from "@/features/vehicles/catalog";
 import { canManageVehicles } from "@/lib/auth/permissions";
 import { getAdminAccessContext } from "@/lib/auth/session";
 
@@ -34,7 +35,10 @@ export default async function NewVehiclePage(): Promise<ReactElement | null> {
         </Button>
       }
     >
-      <VehicleForm mode="create" />
+      <VehicleForm
+        catalog={getDealershipVehicleCatalog(access.dealership.vehicle_catalog)}
+        mode="create"
+      />
     </PageContent>
   );
 }

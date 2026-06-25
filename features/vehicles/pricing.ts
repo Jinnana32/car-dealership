@@ -20,6 +20,8 @@ export const VEHICLE_FINANCING_DISPLAY_STYLE_LABELS: Record<
 
 export const VEHICLE_FINANCING_TERM_YEAR_OPTIONS = [3, 4, 5, 6, 7] as const;
 
+export const VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS = [20, 35, 50] as const;
+
 export type VehicleFinancingTermYearOption =
   (typeof VEHICLE_FINANCING_TERM_YEAR_OPTIONS)[number];
 

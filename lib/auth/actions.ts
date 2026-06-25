@@ -163,6 +163,7 @@ export async function updateDealershipSettingsAction(
     logo_url: formData.get("logo_url"),
     name: formData.get("name"),
     slug: formData.get("slug"),
+    vehicle_catalog: formData.get("vehicle_catalog"),
   });
 
   if (!parsed.success) {

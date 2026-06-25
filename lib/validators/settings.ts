@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { parseVehicleCatalogInput } from "@/features/vehicles/catalog";
+
 export const profileSettingsSchema = z.object({
   avatar_url: z
     .string()
@@ -67,5 +69,24 @@ export const dealershipSettingsSchema = z.object({
     .min(2, "Slug must be at least 2 characters.")
     .max(80, "Slug must be 80 characters or fewer.")
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only."),
+  vehicle_catalog: z
+    .string()
+    .trim()
+    .transform((value, context) => {
+      if (!value) {
+        return {};
+      }
+
+      try {
+        return parseVehicleCatalogInput(JSON.parse(value) as unknown);
+      } catch {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Vehicle catalog must be valid JSON.",
+        });
+
+        return z.NEVER;
+      }
+    }),
 });
 

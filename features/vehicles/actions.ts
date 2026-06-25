@@ -15,6 +15,7 @@ import {
   computeDownPaymentFromPercent,
   type VehicleFinancingTerm,
 } from "@/features/vehicles/pricing";
+import { formatEngineValue } from "@/features/vehicles/engine";
 import {
   VEHICLE_MEDIA_BUCKET,
 } from "@/features/vehicles/constants";
@@ -29,6 +30,7 @@ import {
   archiveVehicleSchema,
   createVehicleSchema,
   setFeaturedVehicleMediaSchema,
+  updateVehicleMarketingSchema,
   updateVehicleSchema,
   uploadVehicleMediaSchema,
   vehicleAvailabilitySchema,
@@ -139,26 +141,20 @@ function extractVehicleFormValues(formData: FormData): VehicleFormValues {
     body_type: getStringValue(formData, "body_type"),
     brand: getStringValue(formData, "brand"),
     color: getStringValue(formData, "color"),
-    condition_summary: getStringValue(formData, "condition_summary"),
     description: getStringValue(formData, "description"),
-    engine: getStringValue(formData, "engine"),
-    financing_display_style: getStringValue(formData, "financing_display_style") || "detailed",
+    engine_size: getStringValue(formData, "engine_size"),
+    engine_type: getStringValue(formData, "engine_type"),
     financing_down_payment_percent: getStringValue(formData, "financing_down_payment_percent"),
-    financing_down_payment_label: getStringValue(formData, "financing_down_payment_label"),
     financing_enabled: getCheckboxFormValue(formData, "financing_enabled"),
-    financing_headline: getStringValue(formData, "financing_headline"),
     financing_monthly_terms: getStringValue(formData, "financing_monthly_terms"),
-    financing_notes: getStringValue(formData, "financing_notes"),
     fuel_type: getStringValue(formData, "fuel_type"),
     highlights: getStringValue(formData, "highlights"),
-    is_price_negotiable: getCheckboxFormValue(formData, "is_price_negotiable"),
     mileage: getStringValue(formData, "mileage"),
     model: getStringValue(formData, "model"),
     plate_number: getStringValue(formData, "plate_number"),
     post_location_tag: getStringValue(formData, "post_location_tag"),
     price: getStringValue(formData, "price"),
     sale_inclusions: getStringValue(formData, "sale_inclusions"),
-    show_cash_price_in_posts: getCheckboxFormValue(formData, "show_cash_price_in_posts"),
     slug: getStringValue(formData, "slug"),
     status: getStringValue(formData, "status"),
     stock_number: getStringValue(formData, "stock_number"),
@@ -225,6 +221,16 @@ function applyVehicleFinancingPayload<T extends z.infer<typeof createVehicleSche
   };
 }
 
+function applyVehicleEnginePayload<T extends {
+  engine_size: string | null;
+  engine_type: string | null;
+}>(data: T): T & { engine: string | null } {
+  return {
+    ...data,
+    engine: formatEngineValue(data.engine_size, data.engine_type),
+  };
+}
+
 function validateFinancingTermSelection(
   data: z.infer<typeof createVehicleSchema>,
   formData: FormData,
@@ -260,7 +266,7 @@ function validateFinancingTermSelection(
     return {
       error: "Please correct the highlighted fields.",
       fieldErrors: {
-        financing_down_payment_percent: ["Enter a down payment percentage."],
+        financing_down_payment_percent: ["Select a down payment percentage."],
       },
       values,
     };
@@ -519,10 +525,14 @@ export async function createVehicle(
     });
 
     const insertPayload: VehicleInsert = {
-      ...applyVehicleFinancingPayload(parsed.data, formData),
+      ...applyVehicleEnginePayload(applyVehicleFinancingPayload(parsed.data, formData)),
+      condition_summary: null,
       created_by: access.profile.id,
       dealership_id: access.dealership.id,
       featured_image_url: null,
+      financing_display_style: "detailed",
+      is_price_negotiable: false,
+      show_cash_price_in_posts: true,
       slug,
     };
 
@@ -620,7 +630,11 @@ export async function updateVehicle(
     });
 
     const updatePayload = {
-      ...applyVehicleFinancingPayload(parsed.data, formData),
+      ...applyVehicleEnginePayload(applyVehicleFinancingPayload(parsed.data, formData)),
+      condition_summary: existingVehicle.condition_summary,
+      financing_display_style: existingVehicle.financing_display_style,
+      is_price_negotiable: existingVehicle.is_price_negotiable,
+      show_cash_price_in_posts: existingVehicle.show_cash_price_in_posts,
       slug,
     };
 
@@ -984,4 +998,53 @@ export async function updateVehicleAvailability(formData: FormData): Promise<voi
 
   revalidateVehiclePaths(vehicle.id);
   redirectWithMessage(fallbackPath, "success", "Vehicle availability updated.");
+}
+
+export async function updateVehicleMarketingSettings(
+  vehicleId: string,
+  formData: FormData,
+): Promise<void> {
+  const access = await requireAdminAccessContext(`/admin/vehicles/${vehicleId}/marketing`);
+
+  if (!access || !canManageVehicles(access.membership.role)) {
+    redirectWithMessage(
+      `/admin/vehicles/${vehicleId}/marketing`,
+      "error",
+      "You do not have permission to update marketing settings.",
+    );
+  }
+
+  const parsed = updateVehicleMarketingSchema.safeParse({
+    condition_summary: formData.get("condition_summary"),
+    financing_display_style: formData.get("financing_display_style"),
+    is_price_negotiable: formData.get("is_price_negotiable"),
+    show_cash_price_in_posts: formData.get("show_cash_price_in_posts"),
+  });
+
+  if (!parsed.success) {
+    redirectWithMessage(
+      `/admin/vehicles/${vehicleId}/marketing`,
+      "error",
+      parsed.error.issues[0]?.message ?? "Unable to save marketing settings.",
+    );
+  }
+
+  const redirectPath = sanitizeVehicleRedirectPath(
+    getStringValue(formData, "redirect_to"),
+    `/admin/vehicles/${vehicleId}/marketing`,
+  );
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase
+    .from("vehicles")
+    .update(parsed.data)
+    .eq("dealership_id", access.dealership.id)
+    .eq("id", vehicleId);
+
+  if (error) {
+    redirectWithMessage(redirectPath, "error", "Unable to save marketing settings right now.");
+  }
+
+  revalidateVehiclePaths(vehicleId);
+  redirectWithMessage(redirectPath, "success", "Marketing settings updated.");
 }

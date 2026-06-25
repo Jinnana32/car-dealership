@@ -9,6 +9,7 @@ import {
 } from "@/features/vehicles/constants";
 import {
   VEHICLE_FINANCING_DISPLAY_STYLES,
+  VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS,
   parseCheckboxValue,
   parseFinancingTermsInput,
   parseTextList,
@@ -166,29 +167,28 @@ export const createVehicleSchema = z.object({
   brand: z
     .string()
     .trim()
-    .min(1, "Brand is required.")
-    .max(120, "Brand must be 120 characters or fewer."),
+    .min(1, "Make is required.")
+    .max(120, "Make must be 120 characters or fewer."),
   color: nullableText(80),
-  condition_summary: nullableText(160),
   description: z
     .string()
     .trim()
     .max(5000, "Description must be 5000 characters or fewer.")
     .transform((value) => value || null),
-  engine: nullableText(120),
-  financing_display_style: z.enum(VEHICLE_FINANCING_DISPLAY_STYLES).catch("detailed"),
+  engine_size: nullableText(40),
+  engine_type: nullableText(120),
   financing_down_payment_percent: optionalNumber.refine(
-    (value) => value === null || (value >= 0 && value <= 100),
-    "Enter a percentage between 0 and 100.",
+    (value) =>
+      value === null ||
+      VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS.includes(
+        value as (typeof VEHICLE_FINANCING_DOWN_PAYMENT_PERCENT_OPTIONS)[number],
+      ),
+    "Select a down payment percentage.",
   ),
-  financing_down_payment_label: nullableText(80),
   financing_enabled: optionalBoolean,
-  financing_headline: nullableText(160),
   financing_monthly_terms: financingTermsField.catch([]),
-  financing_notes: nullableText(240),
   fuel_type: nullableText(80),
   highlights: textListField.catch([]),
-  is_price_negotiable: optionalBoolean,
   mileage: optionalInteger,
   model: z
     .string()
@@ -199,15 +199,14 @@ export const createVehicleSchema = z.object({
   post_location_tag: nullableText(80),
   price: optionalNumber,
   sale_inclusions: textListField.catch([]),
-  show_cash_price_in_posts: optionalBoolean,
   slug: optionalSlug,
   status: z.enum(VEHICLE_STATUSES),
   stock_number: nullableText(80),
   title: z
     .string()
     .trim()
-    .min(1, "Title is required.")
-    .max(160, "Title must be 160 characters or fewer."),
+    .min(1, "Name is required.")
+    .max(160, "Name must be 160 characters or fewer."),
   transmission: nullableText(80),
   use_cases: textListField.catch([]),
   variant: nullableText(120),
@@ -216,6 +215,13 @@ export const createVehicleSchema = z.object({
 });
 
 export const updateVehicleSchema = createVehicleSchema;
+
+export const updateVehicleMarketingSchema = z.object({
+  condition_summary: nullableText(160),
+  financing_display_style: z.enum(VEHICLE_FINANCING_DISPLAY_STYLES),
+  is_price_negotiable: optionalBoolean,
+  show_cash_price_in_posts: optionalBoolean,
+});
 
 export const uploadVehicleMediaSchema = z.object({
   alt_text: z
