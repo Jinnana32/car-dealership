@@ -1,7 +1,6 @@
 "use client";
 
-import Script from "next/script";
-import { useEffect, useRef, type ReactElement } from "react";
+import { useEffect, type ReactElement } from "react";
 
 type FacebookMessengerChatProps = {
   pageId: string;
@@ -18,54 +17,104 @@ type FacebookSdk = {
 declare global {
   interface Window {
     FB?: FacebookSdk;
+    fbAsyncInit?: () => void;
   }
 }
 
 const DEFAULT_THEME_COLOR = "#e11d2e";
 const DEFAULT_SDK_VERSION = "v23.0";
+const SDK_SCRIPT_ID = "facebook-jssdk";
+
+function ensureFbRoot(): void {
+  if (document.getElementById("fb-root")) {
+    return;
+  }
+
+  const fbRoot = document.createElement("div");
+  fbRoot.id = "fb-root";
+  document.body.appendChild(fbRoot);
+}
+
+function loadFacebookSdk(sdkVersion: string): Promise<void> {
+  if (window.FB?.XFBML) {
+    return Promise.resolve();
+  }
+
+  const existingScript = document.getElementById(SDK_SCRIPT_ID);
+
+  if (existingScript) {
+    return new Promise((resolve) => {
+      const checkSdk = (): void => {
+        if (window.FB?.XFBML) {
+          resolve();
+          return;
+        }
+
+        window.setTimeout(checkSdk, 50);
+      };
+
+      checkSdk();
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    window.fbAsyncInit = () => {
+      resolve();
+    };
+
+    const script = document.createElement("script");
+    script.id = SDK_SCRIPT_ID;
+    script.async = true;
+    script.defer = true;
+    script.crossOrigin = "anonymous";
+    script.src = `https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=${sdkVersion}`;
+    script.onerror = () => {
+      reject(new Error("facebook_sdk_load_failed"));
+    };
+
+    document.body.appendChild(script);
+  });
+}
 
 export function FacebookMessengerChat({
   pageId,
   sdkVersion = DEFAULT_SDK_VERSION,
   themeColor = DEFAULT_THEME_COLOR,
-}: FacebookMessengerChatProps): ReactElement {
-  const chatRootRef = useRef<HTMLDivElement>(null);
-
+}: FacebookMessengerChatProps): ReactElement | null {
   useEffect(() => {
-    const chatRoot = chatRootRef.current;
+    let chatRoot: HTMLDivElement | null = null;
+    let cancelled = false;
 
-    if (!chatRoot) {
-      return;
-    }
+    const mountChatPlugin = async (): Promise<void> => {
+      ensureFbRoot();
 
-    chatRoot.setAttribute("attribution", "biz_inbox");
-    chatRoot.setAttribute("page_id", pageId);
-    chatRoot.setAttribute("theme_color", themeColor);
+      chatRoot = document.createElement("div");
+      chatRoot.className = "fb-customerchat";
+      chatRoot.setAttribute("attribution", "biz_inbox");
+      chatRoot.setAttribute("page_id", pageId);
+      chatRoot.setAttribute("theme_color", themeColor);
+      document.body.appendChild(chatRoot);
 
-    if (window.FB?.XFBML) {
-      window.FB.XFBML.parse(chatRoot);
-    }
-  }, [pageId, themeColor]);
+      try {
+        await loadFacebookSdk(sdkVersion);
 
-  const handleSdkLoad = (): void => {
-    const chatRoot = chatRootRef.current;
+        if (cancelled || !chatRoot) {
+          return;
+        }
 
-    if (chatRoot && window.FB?.XFBML) {
-      window.FB.XFBML.parse(chatRoot);
-    }
-  };
+        window.FB?.XFBML.parse(chatRoot);
+      } catch {
+        // Facebook SDK blocked or failed to load.
+      }
+    };
 
-  return (
-    <>
-      <div id="fb-root" />
-      <div className="fb-customerchat" ref={chatRootRef} />
-      <Script
-        crossOrigin="anonymous"
-        id="facebook-jssdk"
-        onLoad={handleSdkLoad}
-        src={`https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=${sdkVersion}`}
-        strategy="lazyOnload"
-      />
-    </>
-  );
+    void mountChatPlugin();
+
+    return () => {
+      cancelled = true;
+      chatRoot?.remove();
+    };
+  }, [pageId, sdkVersion, themeColor]);
+
+  return null;
 }
