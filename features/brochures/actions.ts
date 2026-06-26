@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 
 import { renderBrochurePdf } from "@/features/brochures/pdf";
@@ -28,6 +27,11 @@ import { BROCHURE_STORAGE_BUCKET } from "@/features/brochures/constants";
 import { canGenerateBrochures } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
 import type { AdminAccessContext } from "@/lib/auth/types";
+import { redirectWithMessage } from "@/lib/redirect";
+import {
+  getBrandLogoDataUrl,
+  readLocalPublicImageAsDataUrl,
+} from "@/lib/branding";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
 import type { Vehicle, VehicleMedia } from "@/features/vehicles/types";
@@ -55,18 +59,6 @@ function sanitizeRedirectPath(
   }
 
   return candidate;
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 function getVehicleIds(formData: FormData): string[] {
@@ -121,6 +113,30 @@ async function fetchImageAsDataUrl(url: string | null): Promise<string | null> {
   }
 }
 
+async function resolveDealershipLogoDataUrl(
+  logoUrl: string | null,
+): Promise<string | null> {
+  const trimmed = logoUrl?.trim();
+
+  if (trimmed) {
+    if (trimmed.startsWith("/")) {
+      const localLogo = await readLocalPublicImageAsDataUrl(trimmed);
+
+      if (localLogo) {
+        return localLogo;
+      }
+    }
+
+    const remoteLogo = await fetchImageAsDataUrl(trimmed);
+
+    if (remoteLogo) {
+      return remoteLogo;
+    }
+  }
+
+  return getBrandLogoDataUrl();
+}
+
 async function buildPreparedDealership(
   access: AdminAccessContext,
 ): Promise<PreparedBrochureDealership> {
@@ -128,7 +144,7 @@ async function buildPreparedDealership(
     contactEmail: access.dealership.contact_email,
     contactPhone: access.dealership.contact_phone,
     facebookPageUrl: access.dealership.facebook_page_url,
-    logoDataUrl: await fetchImageAsDataUrl(access.dealership.logo_url),
+    logoDataUrl: await resolveDealershipLogoDataUrl(access.dealership.logo_url),
     logoUrl: access.dealership.logo_url,
     name: access.dealership.name,
     slug: access.dealership.slug,
@@ -513,7 +529,7 @@ async function runBrochureGeneration(input: {
   });
 
   if (successMessage) {
-    redirectWithMessage(redirectPath, "success", successMessage);
+    redirectWithMessage("/admin/brochures", "success", successMessage);
   }
 }
 

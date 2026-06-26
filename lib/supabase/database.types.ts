@@ -528,6 +528,78 @@ export type Database = {
         };
         Relationships: [];
       };
+      facebook_post_comments: {
+        Row: {
+          author_facebook_id: string | null;
+          author_name: string;
+          created_at: string;
+          customer_id: string | null;
+          dealership_id: string;
+          error_message: string | null;
+          facebook_comment_id: string;
+          facebook_connection_id: string | null;
+          facebook_post_id: string;
+          id: string;
+          inquiry_id: string | null;
+          message: string;
+          page_id: string;
+          parent_comment_id: string | null;
+          processed_at: string | null;
+          publication_id: string | null;
+          raw_payload: Json;
+          received_at: string;
+          status: "received" | "processed" | "duplicate" | "ignored" | "failed";
+          updated_at: string;
+          vehicle_id: string | null;
+        };
+        Insert: {
+          author_facebook_id?: string | null;
+          author_name: string;
+          created_at?: string;
+          customer_id?: string | null;
+          dealership_id: string;
+          error_message?: string | null;
+          facebook_comment_id: string;
+          facebook_connection_id?: string | null;
+          facebook_post_id: string;
+          id?: string;
+          inquiry_id?: string | null;
+          message: string;
+          page_id: string;
+          parent_comment_id?: string | null;
+          processed_at?: string | null;
+          publication_id?: string | null;
+          raw_payload?: Json;
+          received_at?: string;
+          status?: "received" | "processed" | "duplicate" | "ignored" | "failed";
+          updated_at?: string;
+          vehicle_id?: string | null;
+        };
+        Update: {
+          author_facebook_id?: string | null;
+          author_name?: string;
+          created_at?: string;
+          customer_id?: string | null;
+          dealership_id?: string;
+          error_message?: string | null;
+          facebook_comment_id?: string;
+          facebook_connection_id?: string | null;
+          facebook_post_id?: string;
+          id?: string;
+          inquiry_id?: string | null;
+          message?: string;
+          page_id?: string;
+          parent_comment_id?: string | null;
+          processed_at?: string | null;
+          publication_id?: string | null;
+          raw_payload?: Json;
+          received_at?: string;
+          status?: "received" | "processed" | "duplicate" | "ignored" | "failed";
+          updated_at?: string;
+          vehicle_id?: string | null;
+        };
+        Relationships: [];
+      };
       facebook_webhook_events: {
         Row: {
           created_at: string;
@@ -535,7 +607,7 @@ export type Database = {
           error_message: string | null;
           event_key: string;
           event_name: string;
-          event_source: "messenger" | "lead_form" | "unknown";
+          event_source: "messenger" | "lead_form" | "comment" | "unknown";
           facebook_connection_id: string | null;
           id: string;
           metadata: Json;
@@ -554,7 +626,7 @@ export type Database = {
           error_message?: string | null;
           event_key: string;
           event_name: string;
-          event_source?: "messenger" | "lead_form" | "unknown";
+          event_source?: "messenger" | "lead_form" | "comment" | "unknown";
           facebook_connection_id?: string | null;
           id?: string;
           metadata?: Json;
@@ -573,7 +645,7 @@ export type Database = {
           error_message?: string | null;
           event_key?: string;
           event_name?: string;
-          event_source?: "messenger" | "lead_form" | "unknown";
+          event_source?: "messenger" | "lead_form" | "comment" | "unknown";
           facebook_connection_id?: string | null;
           id?: string;
           metadata?: Json;

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { INQUIRY_SOURCE_TYPES, INQUIRY_STATUSES } from "@/features/inquiries/constants";
 import { VEHICLE_SALE_PAYMENT_TYPES } from "@/features/sales/constants";
 import { VEHICLE_AVAILABILITIES, VEHICLE_STATUSES } from "@/features/vehicles/constants";
+import { preprocessMoneyValue } from "@/lib/money";
 
 function optionalDateFilter() {
   return z
@@ -44,9 +45,7 @@ function optionalNumberFilter() {
       return null;
     }
 
-    const parsed = Number(value);
-
-    return Number.isNaN(parsed) ? value : parsed;
+    return preprocessMoneyValue(value);
   }, z.number().nonnegative("Enter a valid number.").nullable()).catch(null);
 }
 

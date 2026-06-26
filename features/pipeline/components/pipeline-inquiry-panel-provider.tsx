@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -86,6 +87,16 @@ export function PipelineInquiryPanelProvider({
     });
   }, [inquiryId]);
 
+  const handleSaleRecorded = useCallback(() => {
+    if (!inquiryId) {
+      return;
+    }
+
+    startTransition(() => {
+      void loadInquiryPanelData(inquiryId).then(setPanelData);
+    });
+  }, [inquiryId]);
+
   function closeInquiry(): void {
     setInquiryId(null);
   }
@@ -138,6 +149,7 @@ export function PipelineInquiryPanelProvider({
                   financingAprPercent={panelResult.financingAprPercent}
                   layout="panel"
                   memberOptions={panelResult.memberOptions}
+                  onSaleRecorded={handleSaleRecorded}
                   record={panelResult.record}
                   redirectTo={redirectPath}
                   saleRecord={panelResult.saleRecord}

@@ -214,7 +214,7 @@ export function PipelineFilters({
                   type="checkbox"
                   value="true"
                 />
-                Show closed stages (Won / Lost)
+                Show lost stage
               </label>
             ) : null}
 

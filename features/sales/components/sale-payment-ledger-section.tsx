@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 
 import { ConfirmSubmitButton } from "@/components/forms/confirm-submit-button";
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -165,14 +166,11 @@ export function SalePaymentLedgerSection({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor={`payment-amount-${saleId}`}>Amount</Label>
-                <Input
+                <CurrencyInput
                   id={`payment-amount-${saleId}`}
-                  max={canManageOverpayment ? undefined : ledger.summary.balanceRemaining}
-                  min="0.01"
                   name="amount"
+                  placeholder="0"
                   required
-                  step="0.01"
-                  type="number"
                 />
               </div>
               <div className="space-y-2">

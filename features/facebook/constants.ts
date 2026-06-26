@@ -38,6 +38,14 @@ export const FACEBOOK_LEAD_STATUSES = [
   "failed",
 ] as const;
 
+export const FACEBOOK_COMMENT_STATUSES = [
+  "received",
+  "processed",
+  "duplicate",
+  "ignored",
+  "failed",
+] as const;
+
 export const FACEBOOK_CONNECTION_STATUS_LABELS: Record<
   (typeof FACEBOOK_CONNECTION_STATUSES)[number],
   string
@@ -96,6 +104,17 @@ export const FACEBOOK_LEAD_STATUS_LABELS: Record<
   received: "Received",
 };
 
+export const FACEBOOK_COMMENT_STATUS_LABELS: Record<
+  (typeof FACEBOOK_COMMENT_STATUSES)[number],
+  string
+> = {
+  duplicate: "Duplicate",
+  failed: "Failed",
+  ignored: "Ignored",
+  processed: "Processed",
+  received: "Received",
+};
+
 export const FACEBOOK_HUB_COMING_SOON_ITEMS = [
   "Messenger Chatbot Capture",
   "Ad Draft Creation",
@@ -130,6 +149,15 @@ export const FACEBOOK_LEAD_STATUS_FILTER_OPTIONS = [
   { label: "Received", value: "received" },
   { label: "Processed", value: "processed" },
   { label: "Duplicate", value: "duplicate" },
+  { label: "Failed", value: "failed" },
+] as const;
+
+export const FACEBOOK_COMMENT_STATUS_FILTER_OPTIONS = [
+  { label: "All statuses", value: "all" },
+  { label: "Received", value: "received" },
+  { label: "Processed", value: "processed" },
+  { label: "Duplicate", value: "duplicate" },
+  { label: "Ignored", value: "ignored" },
   { label: "Failed", value: "failed" },
 ] as const;
 

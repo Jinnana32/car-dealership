@@ -1,13 +1,13 @@
 import { z } from "zod";
 
+import { preprocessMoneyValue } from "@/lib/money";
+
 const numericFilter = z.preprocess((value) => {
   if (value === null || value === undefined || value === "") {
     return null;
   }
 
-  const parsed = Number(value);
-
-  return Number.isNaN(parsed) ? value : parsed;
+  return preprocessMoneyValue(value);
 }, z.number().nonnegative("Enter a valid price.").nullable());
 
 export const publicVehicleFiltersSchema = z

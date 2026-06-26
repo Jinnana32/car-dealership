@@ -4,13 +4,13 @@ import type { ReactElement } from "react";
 import { ConfirmSubmitButton } from "@/components/forms/confirm-submit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { InquirySourceBadge } from "@/features/inquiries/components/inquiry-source-badge";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
 import { RecordSalePaymentPlanFields } from "@/features/sales/components/record-sale-payment-plan-fields";
+import { RecordSalePriceFields } from "@/features/sales/components/record-sale-price-fields";
 import { SalePaymentPlanStatusBadge } from "@/features/sales/components/sale-payment-plan-status-badge";
 import { recordVehicleSale } from "@/features/sales/actions";
 import type { VehicleSalesContext } from "@/features/sales/types";
@@ -133,28 +133,12 @@ export function VehicleSalesTab({
                     </Select>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="vehicle-sold-price">Sold price</Label>
-                      <Input
-                        defaultValue={vehicle.price ?? ""}
-                        id="vehicle-sold-price"
-                        name="sold_price"
-                        required
-                        type="number"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="vehicle-sold-at">Sold date</Label>
-                      <Input
-                        defaultValue={new Date().toISOString().slice(0, 16)}
-                        id="vehicle-sold-at"
-                        name="sold_at"
-                        required
-                        type="datetime-local"
-                      />
-                    </div>
-                  </div>
+                  <RecordSalePriceFields
+                    formKey={`vehicle-${vehicle.id}`}
+                    listPrice={vehicle.price}
+                    soldAtFieldId="vehicle-sold-at"
+                    soldPriceFieldId="vehicle-sold-price"
+                  />
 
                   <RecordSalePaymentPlanFields
                     defaultFinancierName={defaultFinancierName}

@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { UnauthorizedState } from "@/components/layout/unauthorized-state";
 import { PageContent } from "@/components/layout/page-content";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { StatusToast } from "@/components/ui/status-toast";
@@ -116,8 +117,8 @@ export default async function InventoryReportPage({
           </Select>
           <Input defaultValue={result.filters.brand} name="brand" placeholder="Brand" />
           <Input defaultValue={result.filters.model} name="model" placeholder="Model" />
-          <Input defaultValue={result.filters.minPrice ?? ""} name="minPrice" placeholder="Min price" type="number" />
-          <Input defaultValue={result.filters.maxPrice ?? ""} name="maxPrice" placeholder="Max price" type="number" />
+          <CurrencyInput defaultValue={result.filters.minPrice ?? ""} name="minPrice" placeholder="Min price" />
+          <CurrencyInput defaultValue={result.filters.maxPrice ?? ""} name="maxPrice" placeholder="Max price" />
           <div className="flex gap-2">
             <Button type="submit" variant="outline">
               Apply

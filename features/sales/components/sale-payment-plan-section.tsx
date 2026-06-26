@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react";
 
 import { SubmitButton } from "@/components/forms/submit-button";
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,13 +150,10 @@ export function SalePaymentPlanSection({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor={`plan-${saleId}-down-payment`}>Down payment</Label>
-                  <Input
+                  <CurrencyInput
                     defaultValue={paymentPlan.down_payment_amount}
                     id={`plan-${saleId}-down-payment`}
-                    min="0"
                     name="down_payment_amount"
-                    step="0.01"
-                    type="number"
                   />
                 </div>
                 <div className="space-y-2">
@@ -171,13 +169,10 @@ export function SalePaymentPlanSection({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`plan-${saleId}-monthly`}>Monthly payment</Label>
-                  <Input
+                  <CurrencyInput
                     defaultValue={paymentPlan.monthly_payment ?? ""}
                     id={`plan-${saleId}-monthly`}
-                    min="0"
                     name="monthly_payment"
-                    step="0.01"
-                    type="number"
                   />
                 </div>
                 <div className="space-y-2">
@@ -191,13 +186,10 @@ export function SalePaymentPlanSection({
                 {paymentPlan.trade_in_amount !== null ? (
                   <div className="space-y-2">
                     <Label htmlFor={`plan-${saleId}-trade-in`}>Trade-in value</Label>
-                    <Input
+                    <CurrencyInput
                       defaultValue={paymentPlan.trade_in_amount}
                       id={`plan-${saleId}-trade-in`}
-                      min="0"
                       name="trade_in_amount"
-                      step="0.01"
-                      type="number"
                     />
                   </div>
                 ) : null}

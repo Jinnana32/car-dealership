@@ -31,6 +31,7 @@ export function VehicleImage({
           fill
           sizes="(max-width: 768px) 100vw, 320px"
           src={src}
+          unoptimized={src.includes("/storage/v1/object/sign/")}
         />
       ) : (
         <div className="flex flex-col items-center gap-2 text-muted-foreground">

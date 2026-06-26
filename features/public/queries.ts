@@ -2,7 +2,6 @@ import "server-only";
 
 import { cache } from "react";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   PublicDealership,
@@ -15,6 +14,7 @@ import type {
   PublicVehicleMedia,
 } from "@/features/public/types";
 import { publicVehicleFiltersSchema } from "@/features/public/validators";
+import { buildVehicleMediaProxyUrl } from "@/lib/vehicle-media";
 
 type PublicVehicleSearchParams = {
   brand?: string | string[];
@@ -49,35 +49,8 @@ function getFirstParam(value: string | string[] | undefined): string | undefined
 async function getSignedPublicVehicleMedia(
   storagePaths: Array<string | null>,
 ): Promise<SignedPath[]> {
-  const nonNullPaths = storagePaths.filter(
-    (path): path is string => Boolean(path),
-  );
-
-  if (nonNullPaths.length === 0) {
-    return storagePaths.map((storagePath) => ({
-      signedUrl: null,
-      storagePath,
-    }));
-  }
-
-  const supabaseAdmin = createSupabaseAdminClient();
-  const { data, error } = await supabaseAdmin.storage
-    .from("vehicle-media")
-    .createSignedUrls(nonNullPaths, 60 * 60);
-
-  if (error) {
-    return storagePaths.map((storagePath) => ({
-      signedUrl: null,
-      storagePath,
-    }));
-  }
-
-  const signedUrlByPath = new Map(
-    data.map((item) => [item.path, item.signedUrl ?? null]),
-  );
-
   return storagePaths.map((storagePath) => ({
-    signedUrl: storagePath ? signedUrlByPath.get(storagePath) ?? null : null,
+    signedUrl: storagePath ? buildVehicleMediaProxyUrl(storagePath) : null,
     storagePath,
   }));
 }

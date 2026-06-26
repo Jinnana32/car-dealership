@@ -98,7 +98,7 @@ export async function getPipelineData(
 
   const visibleStages = showClosed
     ? stages
-    : stages.filter((stage) => !stage.is_terminal);
+    : stages.filter((stage) => !stage.is_terminal || stage.key === "won");
 
   const inquiriesByStatus = new Map<InquiryStatus, typeof inquiryList.inquiries>();
 

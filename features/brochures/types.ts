@@ -94,3 +94,24 @@ export type PreparedBrochureDocument = {
 export type BrochureGenerationWarning =
   | "public_url_unavailable"
   | "qr_generation_failed";
+
+export type BrochurePickerVehicle = {
+  availability: Vehicle["availability"];
+  brand: string;
+  featuredImageUrl: string | null;
+  hasPublicListingWarning: boolean;
+  id: string;
+  model: string;
+  price: number | null;
+  status: Vehicle["status"];
+  stockNumber: string | null;
+  title: string;
+  year: number | null;
+};
+
+export type BrochurePickerFilters = {
+  availability: Vehicle["availability"] | "all";
+  brand: string;
+  search: string;
+  status: Vehicle["status"] | "all";
+};

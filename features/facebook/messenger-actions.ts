@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { createCustomer } from "@/features/customers/actions";
 import type { CustomerDuplicateMatch } from "@/features/customers/types";
@@ -24,6 +23,7 @@ import {
 import { canCreateLeads } from "@/lib/auth/permissions";
 import type { AdminAccessContext } from "@/lib/auth/types";
 import { requireAdminAccessContext } from "@/lib/auth/session";
+import { redirectWithMessage } from "@/lib/redirect";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -35,18 +35,6 @@ function getStringValue(formData: FormData, key: string): string {
   const value = formData.get(key);
 
   return typeof value === "string" ? value : "";
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 function sanitizeRedirectPath(

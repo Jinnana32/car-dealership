@@ -32,6 +32,7 @@ import {
   getInquiryStatusLabel,
   getPaymentPreferenceLabel,
 } from "@/features/inquiries/utils";
+import { formatVehicleCurrency } from "@/features/vehicles/utils";
 import {
   ACTIVE_PIPELINE_STATUSES,
   LOST_REASONS,
@@ -39,6 +40,8 @@ import {
 } from "@/features/pipeline/constants";
 import { FollowUpBadge } from "@/features/pipeline/components/follow-up-badge";
 import { RecordSalePaymentPlanFields } from "@/features/sales/components/record-sale-payment-plan-fields";
+import { RecordSalePriceFields } from "@/features/sales/components/record-sale-price-fields";
+import { RecordVehicleSaleForm } from "@/features/sales/components/record-vehicle-sale-form";
 import { recordVehicleSale } from "@/features/sales/actions";
 import type { VehicleSaleRecord } from "@/features/sales/types";
 import { getVehicleSalePaymentTypeLabel } from "@/features/sales/utils";
@@ -57,6 +60,7 @@ export type InquiryDetailPanelsProps = {
   financingAprPercent: number;
   layout?: "page" | "panel";
   memberOptions: DealershipMemberOption[];
+  onSaleRecorded?: () => void;
   record: InquiryRecord;
   redirectTo: string;
   saleRecord: VehicleSaleRecord | null;
@@ -85,6 +89,7 @@ export function InquiryDetailPanels({
   financingAprPercent,
   layout = "page",
   memberOptions,
+  onSaleRecorded,
   record,
   redirectTo,
   saleRecord,
@@ -453,7 +458,24 @@ export function InquiryDetailPanels({
           </div>
         ) : null}
 
-        {canShowSaleForm ? (
+        {canShowSaleForm && layout === "panel" ? (
+          <RecordVehicleSaleForm
+            askingPrice={vehicle?.price ?? null}
+            budgetRange={inquiry.budget_range}
+            customerId={customer.id}
+            customerName={customer.full_name}
+            defaultFinancierName={defaultFinancierName}
+            financingAprPercent={financingAprPercent}
+            inquiryId={inquiry.id}
+            listPrice={vehicle?.price ?? null}
+            onSuccess={onSaleRecorded}
+            redirectTo={redirectTo}
+            vehicleId={vehicle?.id ?? ""}
+            vehicleTitle={vehicle?.title ?? "Not linked"}
+          />
+        ) : null}
+
+        {canShowSaleForm && layout === "page" ? (
           <form action={recordVehicleSale} className="space-y-4">
             <input name="asking_price" type="hidden" value={vehicle?.price ?? ""} />
             <input name="confirm" type="hidden" value="record_sale" />
@@ -485,39 +507,31 @@ export function InquiryDetailPanels({
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    Asking price
+                    List price
                   </p>
-                  <p className="mt-1">
-                    {vehicle?.price?.toLocaleString("en-PH", {
-                      currency: "PHP",
-                      style: "currency",
-                    }) ?? "Not set"}
+                  <p className="mt-1 font-medium text-foreground">
+                    {formatVehicleCurrency(vehicle?.price ?? null)}
                   </p>
                 </div>
+                {!vehicle?.price && inquiry.budget_range ? (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      Budget (inquiry)
+                    </p>
+                    <p className="mt-1">{inquiry.budget_range}</p>
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={fieldId(inquiry.id, "sold_price")}>Sold price</Label>
-                <Input
-                  defaultValue={vehicle?.price ?? ""}
-                  id={fieldId(inquiry.id, "sold_price")}
-                  name="sold_price"
-                  required
-                  type="number"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={fieldId(inquiry.id, "sold_at")}>Sold date</Label>
-                <Input
-                  defaultValue={new Date().toISOString().slice(0, 16)}
-                  id={fieldId(inquiry.id, "sold_at")}
-                  name="sold_at"
-                  required
-                  type="datetime-local"
-                />
-              </div>
+            <div className="space-y-4">
+              <RecordSalePriceFields
+                formKey={inquiry.id}
+                listPrice={vehicle?.price ?? null}
+                soldAtFieldId={fieldId(inquiry.id, "sold_at")}
+                soldPriceFieldId={fieldId(inquiry.id, "sold_price")}
+              />
+
               <RecordSalePaymentPlanFields
                 defaultFinancierName={defaultFinancierName}
                 defaultSoldPrice={vehicle?.price ?? null}
@@ -525,7 +539,7 @@ export function InquiryDetailPanels({
                 idPrefix={inquiry.id}
                 soldPriceFieldId={fieldId(inquiry.id, "sold_price")}
               />
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor={fieldId(inquiry.id, "sale_notes")}>Notes</Label>
                 <Textarea
                   id={fieldId(inquiry.id, "sale_notes")}

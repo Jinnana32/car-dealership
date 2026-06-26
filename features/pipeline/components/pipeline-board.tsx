@@ -27,8 +27,8 @@ export function PipelineBoard({
   const canAssign = canAssignInquiries(role);
 
   return (
-    <div className="min-w-0 overflow-x-auto pb-2">
-      <div className="flex w-max gap-4">
+    <div className="min-w-0">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {columns.map((column) => {
           const columnSummary = buildColumnSummary(column.inquiries);
           const stageColors = getPipelineStageColors(column.stage.key);
@@ -36,10 +36,10 @@ export function PipelineBoard({
           return (
             <section
               key={column.stage.key}
-              className="w-[280px] shrink-0 rounded-[20px] border border-border bg-[#f4f4f5] shadow-sm"
+              className="flex h-[500px] min-w-0 flex-col rounded-[20px] border border-border bg-[#f4f4f5] shadow-sm"
               title={column.stage.description ?? undefined}
             >
-              <div className={cn("px-3 py-2.5", stageColors.header)}>
+              <div className={cn("shrink-0 px-3 py-2.5", stageColors.header)}>
                 <div className="flex items-center justify-between gap-2">
                   <h2 className={cn("text-sm font-semibold", stageColors.headerText)}>
                     {column.stage.label}
@@ -60,7 +60,7 @@ export function PipelineBoard({
                 ) : null}
               </div>
 
-              <div className="p-3">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
                 {column.inquiries.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-border bg-white px-3 py-5 text-center text-xs text-muted-foreground">
                     No inquiries

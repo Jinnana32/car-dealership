@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import {
   canCreateFacebookContent,
@@ -10,6 +9,7 @@ import {
 } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
 import type { AdminAccessContext } from "@/lib/auth/types";
+import { redirectWithMessage } from "@/lib/redirect";
 import {
   publishPagePhotoPost,
   publishPageTextPost,
@@ -69,18 +69,6 @@ function sanitizeRedirectPath(
   }
 
   return candidate;
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 const FACEBOOK_PUBLISH_FAILURE_MESSAGE =

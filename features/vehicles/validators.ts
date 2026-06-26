@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import {
+  preprocessMoneyValue,
+} from "@/lib/money";
+
+import {
   VEHICLE_AVAILABILITIES,
   VEHICLE_LIST_DEFAULT_PAGE_SIZE,
   VEHICLE_LIST_PAGE_SIZES,
@@ -31,9 +35,7 @@ const optionalNumber = z.preprocess((value) => {
     return null;
   }
 
-  const numericValue = Number(value);
-
-  return Number.isNaN(numericValue) ? value : numericValue;
+  return preprocessMoneyValue(value);
 }, z.number().nonnegative("Enter a valid number.").nullable());
 
 const optionalInteger = z.preprocess((value) => {
@@ -80,9 +82,7 @@ const optionalFilterNumber = z.preprocess((value) => {
     return null;
   }
 
-  const numericValue = Number(value);
-
-  return Number.isNaN(numericValue) ? value : numericValue;
+  return preprocessMoneyValue(value);
 }, z.number().nonnegative("Enter a valid number.").nullable());
 
 const optionalPage = z.preprocess((value) => {

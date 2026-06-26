@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -18,6 +19,7 @@ import {
   type DownPaymentInputMode,
 } from "@/features/vehicles/pricing";
 import { formatVehicleCurrency } from "@/features/vehicles/utils";
+import { formatMoneyInput, parseMoneyInput } from "@/lib/money";
 
 type RecordSalePaymentPlanFieldsProps = {
   defaultFinancierName?: string;
@@ -34,13 +36,7 @@ function fieldId(idPrefix: string | undefined, name: string): string {
 }
 
 function parseNumericInput(value: string): number | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const numericValue = Number(value);
-
-  return Number.isFinite(numericValue) ? numericValue : null;
+  return parseMoneyInput(value);
 }
 
 export function RecordSalePaymentPlanFields({
@@ -226,16 +222,27 @@ export function RecordSalePaymentPlanFields({
                   Percent
                 </button>
               </div>
-              <Input
-                disabled={planTbd}
-                id={fieldId(idPrefix, "down_payment_value")}
-                inputMode="decimal"
-                min="0"
-                name="down_payment_value"
-                onChange={(event) => setDownPaymentValue(event.target.value)}
-                placeholder={downPaymentMode === "percent" ? "20" : "100000"}
-                value={downPaymentValue}
-              />
+              {downPaymentMode === "amount" ? (
+                <CurrencyInput
+                  disabled={planTbd}
+                  id={fieldId(idPrefix, "down_payment_value")}
+                  name="down_payment_value"
+                  onValueChange={(displayValue) => setDownPaymentValue(displayValue)}
+                  placeholder="100,000"
+                  value={downPaymentValue}
+                />
+              ) : (
+                <Input
+                  disabled={planTbd}
+                  id={fieldId(idPrefix, "down_payment_value")}
+                  inputMode="decimal"
+                  min="0"
+                  name="down_payment_value"
+                  onChange={(event) => setDownPaymentValue(event.target.value)}
+                  placeholder="20"
+                  value={downPaymentValue}
+                />
+              )}
               <input
                 name="down_payment_input_mode"
                 type="hidden"
@@ -282,7 +289,9 @@ export function RecordSalePaymentPlanFields({
                 }
                 readOnly
                 value={
-                  computedMonthlyPayment !== null ? String(computedMonthlyPayment) : ""
+                  computedMonthlyPayment !== null
+                    ? formatMoneyInput(computedMonthlyPayment)
+                    : ""
                 }
               />
               <input
@@ -368,12 +377,10 @@ export function RecordSalePaymentPlanFields({
       {showTradeInFields ? (
         <div className="space-y-2 rounded-2xl border border-border bg-[#fafaf9] p-4">
           <Label htmlFor={fieldId(idPrefix, "trade_in_amount")}>Trade-in value</Label>
-          <Input
+          <CurrencyInput
             id={fieldId(idPrefix, "trade_in_amount")}
-            min="0"
             name="trade_in_amount"
-            step="0.01"
-            type="number"
+            placeholder="0"
           />
         </div>
       ) : null}

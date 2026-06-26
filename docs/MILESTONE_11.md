@@ -1,80 +1,63 @@
-# Milestone 11
+# Milestone 11 — Facebook Post Comments → Auto Inquiry
 
-## Scope
+## Goal
 
-Implemented PDF brochure generation only.
+When a customer comments on a Facebook Page post published from this app, automatically:
 
-Included:
+1. Store the comment
+2. Create or reuse a customer (matched by Facebook author ID when available)
+3. Create a new inquiry with `source_type = facebook_comment`
+4. Link the vehicle when the comment is on a tracked published post
 
-- `brochure_exports` tracking
-- private `brochures` storage bucket
-- single-vehicle brochure generation
-- multi-vehicle brochure generation
-- server-side PDF rendering with `@react-pdf/renderer`
-- QR code support for public vehicle URLs when available
-- brochure history page
-- brochure generator page
-- vehicle detail brochure actions and recent history
-- signed brochure download route
+## Database
 
-Not included:
+- `facebook_post_comments` — comment import tracking and CRM links
+- `facebook_webhook_events.event_source` — extended with `comment`
 
-- reports
-- AI-generated brochure copy
-- email sending
-- Facebook auto-sharing
-- customer portal flows
-- advanced brochure template editing
+Migration: `supabase/migrations/20260626120000_milestone_11_facebook_post_comments.sql`
 
-## Generation Flow
+## API
 
-1. An authenticated admin or sales agent opens `/admin/brochures/new` or a vehicle detail page.
-2. The app validates brochure options and selected vehicles server-side.
-3. Vehicle data is loaded only for the current dealership.
-4. The server renders the brochure PDF using `@react-pdf/renderer`.
-5. Public vehicle URLs are added only when `NEXT_PUBLIC_SITE_URL` exists and the vehicle is `published` and `available`.
-6. QR codes are generated only when a usable public vehicle URL exists.
-7. The finished PDF is uploaded to the private `brochures` bucket.
-8. A `brochure_exports` row is updated with storage metadata and status.
-9. Download requests use a short-lived signed URL from `/api/brochures/[id]/download`.
+- `GET/POST /api/facebook/webhook` — **recommended Meta callback URL** (handles leadgen, messenger, and comments)
+- `GET/POST /api/facebook/comments/webhook` — comments-only endpoint (legacy / direct)
+- Subscribe Page webhook field: **`feed`**
+- Processes `item=comment` + `verb=add` only
 
-## Storage Notes
+## Admin UI
 
-The milestone migration creates the `brochures` bucket and dealership-scoped storage policies.
+- `/admin/facebook/comments` — import history, status, retry failed rows
+- Hub link: **Post Comments**
 
-- Bucket: `brochures`
-- Access: dealership members can read their own dealership brochures
-- Uploads: internal authenticated roles generate brochures server-side only
+## Meta setup checklist
 
-No service role key is exposed in the browser.
+1. In Meta App → Webhooks → Page, add callback URL:
+   - **Recommended:** `https://YOUR_DOMAIN/api/facebook/webhook`
+   - Comments-only (optional): `https://YOUR_DOMAIN/api/facebook/comments/webhook`
+2. Verify token: same `META_WEBHOOK_VERIFY_TOKEN` as other webhooks
+3. Subscribe to **`feed`**
+4. Ensure Page token permissions include:
+   - `pages_manage_metadata`
+   - `pages_read_engagement`
+   - `pages_manage_posts` (already used for publishing)
+5. Publish vehicles through the app so `facebook_post_publications.facebook_post_id` can link comments to inventory
 
-## PDF Content Rules
+## Processing rules
 
-Single-vehicle brochures include:
+- **One inquiry per comment** (duplicate Facebook comment IDs are ignored)
+- **Page-authored comments** are ignored
+- **Empty comments** are ignored
+- **Vehicle linking** uses `facebook_post_publications` exact or fuzzy post ID match
+- **Customer reuse** uses prior `facebook_post_comments.author_facebook_id` when available
 
-- dealership name and logo when available
-- dealership contact details
-- generated date
-- featured image
-- title and core specs
-- price when enabled
-- description
-- public vehicle URL when available
-- QR code when enabled and available
-- disclaimer when enabled
+## Manual test checklist
 
-Multi-vehicle brochures include the same dealership header plus one vehicle section per page for the selected set.
+- [ ] Webhook verification GET returns challenge
+- [ ] Comment on a published vehicle post creates row in `facebook_post_comments`
+- [ ] Customer + inquiry appear in pipeline with source Facebook Comment
+- [ ] Duplicate webhook delivery does not create duplicate inquiries
+- [ ] Failed row can be retried from `/admin/facebook/comments`
 
-Brochures intentionally do not expose:
+## Notes
 
-- VIN
-- plate number
-- private storage paths
-- creator IDs
-- internal metadata
-
-## Environment Notes
-
-`NEXT_PUBLIC_SITE_URL` is recommended so brochures can include public vehicle links and QR codes.
-
-If it is missing, brochure generation still succeeds, but public URLs and QR codes are omitted.
+- Comments rarely include phone/email; staff should follow up in Facebook or Messenger
+- Only posts published through this app (or with matching `facebook_post_id`) auto-link to a vehicle

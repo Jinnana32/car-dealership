@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import {
   canCreateLeads,
   canManageFacebookSettings,
 } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
+import { redirectWithMessage } from "@/lib/redirect";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -41,18 +41,6 @@ function sanitizeRedirectPath(
   }
 
   return candidate;
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 function parseFieldMapJson(value: string): Json {

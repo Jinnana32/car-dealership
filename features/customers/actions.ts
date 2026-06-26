@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+
 import type { ZodError } from "zod";
 
 import { canCreateLeads } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
+import { redirectWithMessage } from "@/lib/redirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Customer, CustomerInsert } from "@/features/customers/types";
 import {
@@ -35,18 +36,6 @@ function getValidationErrors(error: ZodError): {
     fieldErrors: flattened.fieldErrors,
     formErrors,
   };
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 function sanitizeRedirectPath(

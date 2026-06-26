@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { ZodError } from "zod";
+import { z } from "zod";
 
 import type { Inquiry, InquiryInsert } from "@/features/inquiries/types";
 import { searchPossibleCustomerDuplicatesInDealership } from "@/features/inquiries/queries";
@@ -27,11 +29,14 @@ import {
 import { canCreateLeads, canManageDealership, canRecordSales } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
 import type { AdminAccessContext } from "@/lib/auth/types";
+import { redirectWithMessage } from "@/lib/redirect";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
 import type { Vehicle } from "@/features/vehicles/types";
 import type { Customer } from "@/features/customers/types";
 import type {
+  RecordVehicleSaleFormState,
+  RecordVehicleSaleFormValues,
   SalePayment,
   SalePaymentPlan,
   SalePaymentPlanUpdate,
@@ -59,6 +64,62 @@ function extractSalePlanFormFields(formData: FormData) {
     trade_in_amount: formData.get("trade_in_amount"),
   };
 }
+
+function extractRecordVehicleSaleFormValues(formData: FormData): RecordVehicleSaleFormValues {
+  return {
+    asking_price: getStringValue(formData, "asking_price"),
+    confirm: getStringValue(formData, "confirm"),
+    customer_id: getStringValue(formData, "customer_id"),
+    down_payment_amount: getStringValue(formData, "down_payment_amount"),
+    down_payment_input_mode: getStringValue(formData, "down_payment_input_mode"),
+    down_payment_value: getStringValue(formData, "down_payment_value"),
+    financier_name: getStringValue(formData, "financier_name"),
+    inquiry_id: getStringValue(formData, "inquiry_id"),
+    monthly_payment: getStringValue(formData, "monthly_payment"),
+    notes: getStringValue(formData, "notes"),
+    payment_type: getStringValue(formData, "payment_type"),
+    plan_tbd: getStringValue(formData, "plan_tbd"),
+    redirect_to: getStringValue(formData, "redirect_to"),
+    sold_at: getStringValue(formData, "sold_at"),
+    sold_price: getStringValue(formData, "sold_price"),
+    term_months: getStringValue(formData, "term_months"),
+    term_years: getStringValue(formData, "term_years"),
+    trade_in_amount: getStringValue(formData, "trade_in_amount"),
+    vehicle_id: getStringValue(formData, "vehicle_id"),
+  };
+}
+
+function getValidationErrors(error: ZodError): {
+  fieldErrors: Record<string, string[] | undefined>;
+  formErrors: string[];
+} {
+  const flattened = error.flatten();
+  const formErrors =
+    flattened.formErrors.length > 0
+      ? flattened.formErrors
+      : Array.from(new Set(error.issues.map((issue) => issue.message)));
+
+  return {
+    fieldErrors: flattened.fieldErrors,
+    formErrors,
+  };
+}
+
+type RecordVehicleSaleParsed = z.infer<typeof recordVehicleSaleSchema>;
+
+type RecordVehicleSaleExecutionResult =
+  | {
+      inquiryId: string | null;
+      ok: true;
+      saleId: string;
+      vehicleId: string;
+      vehicleSlug: string;
+    }
+  | { error: string; ok: false };
+
+const initialRecordVehicleSaleFormState: RecordVehicleSaleFormState = {
+  fieldErrors: {},
+};
 
 function buildSalePlanInputFromParsed(
   access: AdminAccessContext,
@@ -124,18 +185,6 @@ function sanitizeRedirectPath(
   }
 
   return candidate;
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 async function getAccessibleVehicle(
@@ -241,103 +290,52 @@ function revalidateSalesSurfaces(input: {
   revalidatePath(`/${input.dealershipSlug}/vehicles/${input.vehicleSlug}`);
 }
 
-export async function recordVehicleSale(formData: FormData): Promise<void> {
-  const redirectPath = sanitizeRedirectPath(
-    getStringValue(formData, "redirect_to") || undefined,
-    "/admin/inquiries",
-  );
-  const access = await requireAdminAccessContext("/admin/inquiries");
-
-  if (!access || !canRecordSales(access.membership.role)) {
-    redirectWithMessage(redirectPath, "error", "You do not have permission to record a sale.");
-  }
-
-  const parsed = recordVehicleSaleSchema.safeParse({
-    asking_price: formData.get("asking_price"),
-    confirm: formData.get("confirm"),
-    customer_id: formData.get("customer_id"),
-    inquiry_id: formData.get("inquiry_id"),
-    notes: formData.get("notes"),
-    payment_type: formData.get("payment_type"),
-    redirect_to: formData.get("redirect_to"),
-    sold_at: formData.get("sold_at"),
-    sold_price: formData.get("sold_price"),
-    vehicle_id: formData.get("vehicle_id"),
-    ...extractSalePlanFormFields(formData),
-  });
-
-  if (!parsed.success) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      parsed.error.issues[0]?.message ?? "Enter valid sale details.",
-    );
-  }
-
+async function executeRecordVehicleSale(
+  access: AdminAccessContext,
+  parsed: RecordVehicleSaleParsed,
+): Promise<RecordVehicleSaleExecutionResult> {
   const [vehicle, inquiry] = await Promise.all([
-    getAccessibleVehicle(access, parsed.data.vehicle_id),
-    getAccessibleInquiry(access, parsed.data.inquiry_id),
+    getAccessibleVehicle(access, parsed.vehicle_id),
+    getAccessibleInquiry(access, parsed.inquiry_id),
   ]);
 
   if (!vehicle) {
-    redirectWithMessage(redirectPath, "error", "Vehicle not found or not accessible.");
+    return { error: "Vehicle not found or not accessible.", ok: false };
   }
 
   if (!canCreateSaleForContext({ access, inquiry })) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "You do not have permission to record this sale.",
-    );
+    return { error: "You do not have permission to record this sale.", ok: false };
   }
 
   if (vehicle.status === "sold" || vehicle.availability === "sold") {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "This vehicle is already marked as sold.",
-    );
+    return { error: "This vehicle is already marked as sold.", ok: false };
   }
 
   if (inquiry && inquiry.status === "lost") {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "A lost inquiry cannot be used to record a sale.",
-    );
+    return { error: "A lost inquiry cannot be used to record a sale.", ok: false };
   }
 
   if (inquiry && inquiry.vehicle_id && inquiry.vehicle_id !== vehicle.id) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "The selected inquiry is linked to a different vehicle.",
-    );
+    return {
+      error: "The selected inquiry is linked to a different vehicle.",
+      ok: false,
+    };
   }
 
   const fallbackCustomerId = inquiry?.customer_id ?? null;
-  const selectedCustomerId = parsed.data.customer_id ?? fallbackCustomerId;
+  const selectedCustomerId = parsed.customer_id ?? fallbackCustomerId;
 
-  if (
-    inquiry &&
-    parsed.data.customer_id &&
-    parsed.data.customer_id !== inquiry.customer_id
-  ) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "The selected customer does not match the selected inquiry.",
-    );
+  if (inquiry && parsed.customer_id && parsed.customer_id !== inquiry.customer_id) {
+    return {
+      error: "The selected customer does not match the selected inquiry.",
+      ok: false,
+    };
   }
 
   const customer = await getAccessibleCustomer(access, selectedCustomerId);
 
   if (selectedCustomerId && !customer) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "Customer not found or not accessible.",
-    );
+    return { error: "Customer not found or not accessible.", ok: false };
   }
 
   const adminSupabase = createSupabaseAdminClient();
@@ -349,23 +347,19 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
     .maybeSingle<Pick<VehicleSale, "id">>();
 
   if (existingSale) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "A sale record already exists for this vehicle.",
-    );
+    return { error: "A sale record already exists for this vehicle.", ok: false };
   }
 
   const salePayload: VehicleSaleInsert = {
-    asking_price: parsed.data.asking_price ?? vehicle.price,
+    asking_price: parsed.asking_price ?? vehicle.price,
     created_by: access.profile.id,
     customer_id: customer?.id ?? null,
     dealership_id: access.dealership.id,
     inquiry_id: inquiry?.id ?? null,
-    notes: parsed.data.notes,
-    payment_type: parsed.data.payment_type,
-    sold_at: new Date(parsed.data.sold_at).toISOString(),
-    sold_price: parsed.data.sold_price,
+    notes: parsed.notes,
+    payment_type: parsed.payment_type,
+    sold_at: new Date(parsed.sold_at).toISOString(),
+    sold_price: parsed.sold_price,
     vehicle_id: vehicle.id,
   };
   const { data: saleRecord, error: saleError } = await adminSupabase
@@ -375,16 +369,12 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
     .single<VehicleSale>();
 
   if (saleError || !saleRecord) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "Unable to create the sale record right now.",
-    );
+    return { error: "Unable to create the sale record right now.", ok: false };
   }
 
   const paymentPlanPayload = buildSalePaymentPlanInsert({
     dealershipId: access.dealership.id,
-    plan: buildSalePlanInputFromParsed(access, parsed.data),
+    plan: buildSalePlanInputFromParsed(access, parsed),
     saleId: saleRecord.id,
   });
   const { data: paymentPlan, error: paymentPlanError } = await adminSupabase
@@ -394,11 +384,10 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
     .single<SalePaymentPlan>();
 
   if (paymentPlanError || !paymentPlan) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "The sale was recorded, but the payment plan could not be created.",
-    );
+    return {
+      error: "The sale was recorded, but the payment plan could not be created.",
+      ok: false,
+    };
   }
 
   await adminSupabase.from("sale_payment_plan_events").insert({
@@ -406,8 +395,8 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
     dealership_id: access.dealership.id,
     event_type: "created",
     metadata: {
-      payment_type: parsed.data.payment_type,
-      plan_tbd: parsed.data.plan_tbd,
+      payment_type: parsed.payment_type,
+      plan_tbd: parsed.plan_tbd,
       sale_id: saleRecord.id,
       status: paymentPlan.status,
     } satisfies Json,
@@ -430,11 +419,10 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
     .eq("id", vehicle.id);
 
   if (vehicleError) {
-    redirectWithMessage(
-      redirectPath,
-      "error",
-      "The sale was recorded, but the vehicle status could not be updated.",
-    );
+    return {
+      error: "The sale was recorded, but the vehicle status could not be updated.",
+      ok: false,
+    };
   }
 
   if (inquiry) {
@@ -449,11 +437,10 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
       .eq("id", inquiry.id);
 
     if (inquiryError) {
-      redirectWithMessage(
-        redirectPath,
-        "error",
-        "The sale was recorded, but the inquiry could not be closed as won.",
-      );
+      return {
+        error: "The sale was recorded, but the inquiry could not be closed as won.",
+        ok: false,
+      };
     }
 
     await adminSupabase.from("inquiry_events").insert({
@@ -472,15 +459,125 @@ export async function recordVehicleSale(formData: FormData): Promise<void> {
     });
   }
 
-  revalidateSalesSurfaces({
-    dealershipSlug: access.dealership.slug,
+  return {
     inquiryId: inquiry?.id ?? null,
-    redirectPath,
+    ok: true,
     saleId: saleRecord.id,
     vehicleId: vehicle.id,
     vehicleSlug: vehicle.slug,
+  };
+}
+
+function parseRecordVehicleSaleFormData(formData: FormData) {
+  return recordVehicleSaleSchema.safeParse({
+    asking_price: formData.get("asking_price"),
+    confirm: formData.get("confirm"),
+    customer_id: formData.get("customer_id"),
+    inquiry_id: formData.get("inquiry_id"),
+    notes: formData.get("notes"),
+    payment_type: formData.get("payment_type"),
+    redirect_to: formData.get("redirect_to"),
+    sold_at: formData.get("sold_at"),
+    sold_price: formData.get("sold_price"),
+    vehicle_id: formData.get("vehicle_id"),
+    ...extractSalePlanFormFields(formData),
+  });
+}
+
+export async function recordVehicleSale(formData: FormData): Promise<void> {
+  const redirectPath = sanitizeRedirectPath(
+    getStringValue(formData, "redirect_to") || undefined,
+    "/admin/inquiries",
+  );
+  const access = await requireAdminAccessContext("/admin/inquiries");
+
+  if (!access || !canRecordSales(access.membership.role)) {
+    redirectWithMessage(redirectPath, "error", "You do not have permission to record a sale.");
+  }
+
+  const parsed = parseRecordVehicleSaleFormData(formData);
+
+  if (!parsed.success) {
+    redirectWithMessage(
+      redirectPath,
+      "error",
+      parsed.error.issues[0]?.message ?? "Enter valid sale details.",
+    );
+  }
+
+  const result = await executeRecordVehicleSale(access, parsed.data);
+
+  if (!result.ok) {
+    redirectWithMessage(redirectPath, "error", result.error);
+  }
+
+  revalidateSalesSurfaces({
+    dealershipSlug: access.dealership.slug,
+    inquiryId: result.inquiryId,
+    redirectPath,
+    saleId: result.saleId,
+    vehicleId: result.vehicleId,
+    vehicleSlug: result.vehicleSlug,
   });
   redirectWithMessage(redirectPath, "success", "Sale recorded successfully.");
+}
+
+export async function recordVehicleSaleInPanel(
+  previousState: RecordVehicleSaleFormState = initialRecordVehicleSaleFormState,
+  formData: FormData,
+): Promise<RecordVehicleSaleFormState> {
+  void previousState;
+
+  const values = extractRecordVehicleSaleFormValues(formData);
+  const redirectPath = sanitizeRedirectPath(values.redirect_to || undefined, "/admin/pipeline");
+  const access = await requireAdminAccessContext("/admin/pipeline");
+
+  if (!access || !canRecordSales(access.membership.role)) {
+    return {
+      error: "You do not have permission to record a sale.",
+      fieldErrors: {},
+      values,
+    };
+  }
+
+  const parsed = parseRecordVehicleSaleFormData(formData);
+
+  if (!parsed.success) {
+    const validationErrors = getValidationErrors(parsed.error);
+
+    return {
+      error: "Please correct the highlighted fields.",
+      fieldErrors: validationErrors.fieldErrors,
+      formErrors: validationErrors.formErrors,
+      values,
+    };
+  }
+
+  const result = await executeRecordVehicleSale(access, parsed.data);
+
+  if (!result.ok) {
+    return {
+      error: result.error,
+      fieldErrors: {},
+      values,
+    };
+  }
+
+  revalidateSalesSurfaces({
+    dealershipSlug: access.dealership.slug,
+    inquiryId: result.inquiryId,
+    redirectPath,
+    saleId: result.saleId,
+    vehicleId: result.vehicleId,
+    vehicleSlug: result.vehicleSlug,
+  });
+
+  return {
+    fieldErrors: {},
+    message: "Sale recorded successfully.",
+    success: true,
+    values,
+  };
 }
 
 export async function updateSalePaymentPlan(formData: FormData): Promise<void> {

@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { SALE_PAYMENT_METHODS, VEHICLE_SALE_PAYMENT_TYPES } from "@/features/sales/constants";
+import {
+  preprocessMoneyValue,
+  preprocessRequiredMoneyValue,
+} from "@/lib/money";
 
 const optionalUuid = z
   .string()
@@ -26,9 +30,7 @@ const optionalNumber = z.preprocess((value) => {
     return null;
   }
 
-  const parsed = Number(value);
-
-  return Number.isNaN(parsed) ? value : parsed;
+  return preprocessMoneyValue(value);
 }, z.number().positive("Enter a valid amount.").nullable());
 
 const optionalNonNegativeNumber = z.preprocess((value) => {
@@ -36,9 +38,7 @@ const optionalNonNegativeNumber = z.preprocess((value) => {
     return null;
   }
 
-  const parsed = Number(value);
-
-  return Number.isNaN(parsed) ? value : parsed;
+  return preprocessMoneyValue(value);
 }, z.number().nonnegative("Enter a valid amount.").nullable());
 
 const optionalPositiveInt = z.preprocess((value) => {
@@ -51,10 +51,12 @@ const optionalPositiveInt = z.preprocess((value) => {
   return Number.isNaN(parsed) ? value : parsed;
 }, z.number().int().positive("Enter a valid term in months.").nullable());
 
-const planTbdField = z
-  .union([z.literal("true"), z.literal("false"), z.literal("")])
-  .optional()
-  .transform((value) => value === "true");
+const formBooleanField = z.preprocess(
+  (value) => (value === null || value === undefined ? "" : value),
+  z.union([z.literal("true"), z.literal("false"), z.literal("")]),
+);
+
+const planTbdField = formBooleanField.transform((value) => value === "true");
 
 const optionalTermYears = z.preprocess((value) => {
   if (value === null || value === undefined || value === "") {
@@ -135,22 +137,20 @@ export const recordVehicleSaleSchema = z
     customer_id: optionalUuid,
     inquiry_id: optionalUuid,
     notes: optionalText(5000),
-    payment_type: z
-      .enum(VEHICLE_SALE_PAYMENT_TYPES)
-      .nullable()
-      .or(z.literal(""))
-      .transform((value) => value || null),
+    payment_type: z.preprocess(
+      (value) => (value === null || value === undefined || value === "" ? null : value),
+      z.enum(VEHICLE_SALE_PAYMENT_TYPES).nullable(),
+    ),
     redirect_to: z.string().trim().optional(),
     sold_at: z
       .string()
       .trim()
       .min(1, "Sold date is required.")
       .refine((value) => !Number.isNaN(new Date(value).getTime()), "Enter a valid sold date."),
-    sold_price: z.preprocess((value) => {
-      const parsed = Number(value);
-
-      return Number.isNaN(parsed) ? value : parsed;
-    }, z.number().positive("Sold price is required.")),
+    sold_price: z.preprocess(
+      preprocessRequiredMoneyValue,
+      z.number().positive("Sold price is required."),
+    ),
     vehicle_id: z.string().uuid("Invalid vehicle."),
     ...salePlanFields,
   })
@@ -170,11 +170,10 @@ export const recordQuickSaleSchema = z
       .transform((value) => value || null),
     existing_customer_id: optionalUuid,
     notes: optionalText(5000),
-    payment_type: z
-      .enum(VEHICLE_SALE_PAYMENT_TYPES)
-      .nullable()
-      .or(z.literal(""))
-      .transform((value) => value || "cash"),
+    payment_type: z.preprocess(
+      (value) => (value === null || value === undefined || value === "" ? "cash" : value),
+      z.enum(VEHICLE_SALE_PAYMENT_TYPES),
+    ),
     phone: z.string().trim().min(1, "Phone is required."),
     redirect_to: z.string().trim().optional(),
     sold_at: z
@@ -182,11 +181,10 @@ export const recordQuickSaleSchema = z
       .trim()
       .min(1, "Sold date is required.")
       .refine((value) => !Number.isNaN(new Date(value).getTime()), "Enter a valid sold date."),
-    sold_price: z.preprocess((value) => {
-      const parsed = Number(value);
-
-      return Number.isNaN(parsed) ? value : parsed;
-    }, z.number().positive("Sold price is required.")),
+    sold_price: z.preprocess(
+      preprocessRequiredMoneyValue,
+      z.number().positive("Sold price is required."),
+    ),
     vehicle_id: z.string().uuid("Select a vehicle."),
     ...salePlanFields,
   })
@@ -202,11 +200,10 @@ export const updateSalePaymentPlanSchema = z
     redirect_to: z.string().trim().optional(),
     sale_id: z.string().uuid("Invalid sale."),
     term_months: optionalPositiveInt,
-    total_amount: z.preprocess((value) => {
-      const parsed = Number(value);
-
-      return Number.isNaN(parsed) ? value : parsed;
-    }, z.number().positive("Total amount is required.")),
+    total_amount: z.preprocess(
+      preprocessRequiredMoneyValue,
+      z.number().positive("Total amount is required."),
+    ),
     trade_in_amount: optionalNonNegativeNumber,
   })
   .superRefine((value, ctx) => {
@@ -232,19 +229,15 @@ export const updateSalePaymentPlanSchema = z
     }
   });
 
-const allowOverpaymentField = z
-  .union([z.literal("true"), z.literal("false"), z.literal("")])
-  .optional()
-  .transform((value) => value === "true");
+const allowOverpaymentField = formBooleanField.transform((value) => value === "true");
 
 export const recordSalePaymentSchema = z
   .object({
     allow_overpayment: allowOverpaymentField,
-    amount: z.preprocess((value) => {
-      const parsed = Number(value);
-
-      return Number.isNaN(parsed) ? value : parsed;
-    }, z.number().positive("Enter a valid payment amount.")),
+    amount: z.preprocess(
+      preprocessRequiredMoneyValue,
+      z.number().positive("Enter a valid payment amount."),
+    ),
     notes: optionalText(2000),
     override_note: optionalText(500),
     paid_at: z

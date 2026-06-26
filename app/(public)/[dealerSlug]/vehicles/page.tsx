@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactElement } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PublicEmptyState } from "@/features/public/components/public-empty-state";
@@ -118,16 +119,14 @@ export default async function PublicVehiclesPage({
               ))}
             </Select>
 
-            <Input
+            <CurrencyInput
               defaultValue={filters.minPrice ?? ""}
-              inputMode="numeric"
               name="minPrice"
               placeholder="Min price"
             />
 
-            <Input
+            <CurrencyInput
               defaultValue={filters.maxPrice ?? ""}
-              inputMode="numeric"
               name="maxPrice"
               placeholder="Max price"
             />

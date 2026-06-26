@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  FACEBOOK_COMMENT_STATUSES,
   FACEBOOK_CONNECTION_STATUSES,
   FACEBOOK_GENERATED_CONTENT_TYPES,
   FACEBOOK_LEAD_STATUSES,
@@ -134,6 +135,8 @@ export const facebookLeadWebhookSchema = z
   })
   .passthrough();
 
+export const facebookPageFeedWebhookSchema = facebookLeadWebhookSchema;
+
 export const facebookMessengerInboxFiltersSchema = z.object({
   q: z
     .string()
@@ -152,6 +155,15 @@ export const facebookContentHistoryFiltersSchema = z.object({
 
 export const facebookLeadHistoryFiltersSchema = z.object({
   status: z.enum(["all", ...FACEBOOK_LEAD_STATUSES] as const).catch("all"),
+});
+
+export const facebookCommentHistoryFiltersSchema = z.object({
+  status: z.enum(["all", ...FACEBOOK_COMMENT_STATUSES] as const).catch("all"),
+});
+
+export const facebookCommentRetrySchema = z.object({
+  comment_id: z.string().uuid("Invalid comment."),
+  redirect_to: z.string().trim().optional(),
 });
 
 export const facebookLeadFormMappingFiltersSchema = z.object({

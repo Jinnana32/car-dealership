@@ -65,6 +65,9 @@ export default async function FacebookHubPage({
               <Link href="/admin/facebook/leads">Imported Leads</Link>
             </Button>
             <Button asChild variant="outline">
+              <Link href="/admin/facebook/comments">Post Comments</Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link href="/admin/facebook/lead-forms">Lead Form Mappings</Link>
             </Button>
             <Button asChild variant="outline">

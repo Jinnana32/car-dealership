@@ -30,6 +30,12 @@ export type FacebookLeadInsert =
   Database["public"]["Tables"]["facebook_leads"]["Insert"];
 export type FacebookLeadUpdate =
   Database["public"]["Tables"]["facebook_leads"]["Update"];
+export type FacebookPostComment =
+  Database["public"]["Tables"]["facebook_post_comments"]["Row"];
+export type FacebookPostCommentInsert =
+  Database["public"]["Tables"]["facebook_post_comments"]["Insert"];
+export type FacebookPostCommentUpdate =
+  Database["public"]["Tables"]["facebook_post_comments"]["Update"];
 export type FacebookApiLog = Database["public"]["Tables"]["facebook_api_logs"]["Row"];
 export type FacebookApiLogInsert =
   Database["public"]["Tables"]["facebook_api_logs"]["Insert"];
@@ -57,6 +63,7 @@ export type FacebookConnectionStatus = FacebookConnection["status"];
 export type FacebookGeneratedContentType =
   FacebookGeneratedContent["content_type"];
 export type FacebookLeadStatus = FacebookLead["status"];
+export type FacebookCommentStatus = FacebookPostComment["status"];
 export type FacebookPublishType = FacebookPostPublication["publish_type"];
 export type FacebookPublicationStatus = FacebookPostPublication["status"];
 export type FacebookMessengerConversationStatus = MessengerConversation["status"];
@@ -139,6 +146,34 @@ export type FacebookLeadProcessingSummary = {
   inquiryId: string | null;
   leadId: string | null;
   status: "duplicate" | "failed" | "processed";
+};
+
+export type FacebookPostCommentRecord = FacebookPostComment & {
+  customer: Pick<Customer, "email" | "full_name" | "id" | "phone"> | null;
+  inquiry: Pick<Inquiry, "created_at" | "id" | "status"> | null;
+  vehicle: Pick<Vehicle, "id" | "slug" | "title"> | null;
+};
+
+export type FacebookCommentListFilters = {
+  status: FacebookCommentStatus | "all";
+};
+
+export type FacebookCommentListResult = {
+  comments: FacebookPostCommentRecord[];
+  failedCount: number;
+  filters: FacebookCommentListFilters;
+  latestReceivedAt: string | null;
+  processedCount: number;
+  receivedCount: number;
+  totalCount: number;
+};
+
+export type FacebookPostCommentProcessingSummary = {
+  commentId: string | null;
+  customerId: string | null;
+  errorMessage?: string;
+  inquiryId: string | null;
+  status: "duplicate" | "failed" | "ignored" | "processed";
 };
 
 export type FacebookMessengerConversationRecord = MessengerConversation & {

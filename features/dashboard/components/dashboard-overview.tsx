@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DashboardColumnBarChart,
-  DashboardDonutChart,
   DashboardMetricCard,
   DashboardPanel,
   DashboardPieChart,
@@ -184,7 +183,7 @@ export function DashboardOverview({
             }
             title="Lead sources"
           >
-            <DashboardDonutChart
+            <DashboardPieChart
               emptyMessage="Lead source mix appears once inquiries are captured."
               segments={data.leadSources}
             />

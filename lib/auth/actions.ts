@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { canManageDealership } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
+import { redirectWithMessage } from "@/lib/redirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loginFormSchema } from "@/lib/validators/auth";
 import {
@@ -18,18 +19,6 @@ function sanitizeNextPath(candidate: string | undefined): string {
   }
 
   return candidate.startsWith("/admin") ? candidate : "/admin/dashboard";
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "info" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 function getSanitizedLoginErrorMessage(message: string): string {

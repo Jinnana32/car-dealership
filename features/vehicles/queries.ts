@@ -1,11 +1,8 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { AdminAccessContext } from "@/lib/auth/types";
 import { getAdminAccessContext } from "@/lib/auth/session";
-import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   Vehicle,
@@ -18,6 +15,7 @@ import type {
   VehicleMediaWithSignedUrl,
 } from "@/features/vehicles/types";
 import { vehicleListFiltersSchema } from "@/features/vehicles/validators";
+import { buildVehicleMediaProxyUrl } from "@/lib/vehicle-media";
 
 type QueryFiltersInput = {
   availability?: string | string[];
@@ -32,45 +30,16 @@ type QueryFiltersInput = {
   status?: string | string[];
 };
 
-type AppSupabaseClient = SupabaseClient<Database>;
-
 function getFirstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
 async function getSignedVehicleMedia(
-  supabase: AppSupabaseClient,
   media: VehicleMedia[],
 ): Promise<VehicleMediaWithSignedUrl[]> {
-  const paths = media
-    .map((item) => item.storage_path)
-    .filter((item): item is string => Boolean(item));
-
-  if (paths.length === 0) {
-    return media.map((item) => ({
-      ...item,
-      signedUrl: null,
-    }));
-  }
-
-  const { data, error } = await supabase.storage
-    .from("vehicle-media")
-    .createSignedUrls(paths, 60 * 60);
-
-  if (error) {
-    return media.map((item) => ({
-      ...item,
-      signedUrl: null,
-    }));
-  }
-
-  const signedUrlByPath = new Map(
-    data.map((item) => [item.path, item.signedUrl ?? null]),
-  );
-
   return media.map((item) => ({
     ...item,
-    signedUrl: item.storage_path ? signedUrlByPath.get(item.storage_path) ?? null : null,
+    signedUrl: item.storage_path ? buildVehicleMediaProxyUrl(item.storage_path) : null,
   }));
 }
 
@@ -244,10 +213,7 @@ export async function getVehiclesList(
     .eq("is_featured", true)
     .in("vehicle_id", vehicleIds);
 
-  const signedFeaturedMedia = await getSignedVehicleMedia(
-    supabase,
-    featuredMedia ?? [],
-  );
+  const signedFeaturedMedia = await getSignedVehicleMedia(featuredMedia ?? []);
 
   const featuredMediaByVehicleId = new Map(
     signedFeaturedMedia.map((item) => [item.vehicle_id, item]),
@@ -307,7 +273,7 @@ export async function getVehicleById(
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  const signedMedia = await getSignedVehicleMedia(supabase, media ?? []);
+  const signedMedia = await getSignedVehicleMedia(media ?? []);
 
   return {
     record: {

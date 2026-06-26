@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactElement } from "react";
 
 import { ConfirmSubmitButton } from "@/components/forms/confirm-submit-button";
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -11,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RecordSalePaymentPlanFields } from "@/features/sales/components/record-sale-payment-plan-fields";
 import { recordQuickSale } from "@/features/sales/actions";
 import { formatVehicleCurrency } from "@/features/vehicles/utils";
+import { formatMoneyInput, parseMoneyInput } from "@/lib/money";
 
 type QuickSaleFormProps = {
   defaultFinancierName: string;
@@ -31,19 +33,15 @@ export function QuickSaleForm({
     [vehicleId, vehicleOptions],
   );
   const soldPrice = useMemo(() => {
-    if (!soldPriceInput.trim()) {
-      return null;
-    }
+    const parsed = parseMoneyInput(soldPriceInput);
 
-    const parsed = Number(soldPriceInput);
-
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    return parsed !== null && parsed > 0 ? parsed : null;
   }, [soldPriceInput]);
 
   useEffect(() => {
     setSoldPriceInput(
       selectedVehicle?.price !== null && selectedVehicle?.price !== undefined
-        ? String(selectedVehicle.price)
+        ? formatMoneyInput(selectedVehicle.price)
         : "",
     );
   }, [selectedVehicle]);
@@ -111,14 +109,11 @@ export function QuickSaleForm({
 
         <div className="space-y-2">
           <Label htmlFor="quick-sale-sold-price">Sold price</Label>
-          <Input
+          <CurrencyInput
             id="quick-sale-sold-price"
-            min="0"
             name="sold_price"
-            onChange={(event) => setSoldPriceInput(event.target.value)}
+            onValueChange={(displayValue) => setSoldPriceInput(displayValue)}
             required
-            step="0.01"
-            type="number"
             value={soldPriceInput}
           />
         </div>

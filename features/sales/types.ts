@@ -138,3 +138,34 @@ export type SalePaymentPlanEvent =
   Database["public"]["Tables"]["sale_payment_plan_events"]["Row"];
 export type SalePaymentPlanType = SalePaymentPlan["plan_type"];
 export type SalePaymentPlanStatus = SalePaymentPlan["status"];
+
+export type RecordVehicleSaleFormValues = {
+  asking_price: string;
+  confirm: string;
+  customer_id: string;
+  down_payment_amount: string;
+  down_payment_input_mode: string;
+  down_payment_value: string;
+  financier_name: string;
+  inquiry_id: string;
+  monthly_payment: string;
+  notes: string;
+  payment_type: string;
+  plan_tbd: string;
+  redirect_to: string;
+  sold_at: string;
+  sold_price: string;
+  term_months: string;
+  term_years: string;
+  trade_in_amount: string;
+  vehicle_id: string;
+};
+
+export type RecordVehicleSaleFormState = {
+  error?: string;
+  fieldErrors?: Record<string, string[] | undefined>;
+  formErrors?: string[];
+  message?: string;
+  success?: boolean;
+  values?: RecordVehicleSaleFormValues;
+};

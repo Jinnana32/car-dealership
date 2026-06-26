@@ -6,6 +6,7 @@ import { useRef } from "react";
 import type { FormEvent, ReactElement } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
@@ -173,18 +174,16 @@ export function VehicleListToolbar({
       </div>
 
       <div className="grid gap-3 md:grid-cols-[repeat(2,minmax(0,1fr))_auto]">
-        <Input
+        <CurrencyInput
           aria-label="Minimum price"
           defaultValue={filters.minPrice ?? ""}
-          inputMode="decimal"
           name="minPrice"
           onBlur={() => submitFilters(true)}
           placeholder="Min price"
         />
-        <Input
+        <CurrencyInput
           aria-label="Maximum price"
           defaultValue={filters.maxPrice ?? ""}
-          inputMode="decimal"
           name="maxPrice"
           onBlur={() => submitFilters(true)}
           placeholder="Max price"

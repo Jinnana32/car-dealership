@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
+import { CurrencyInput } from "@/components/forms/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/features/vehicles/pricing";
 import type { Vehicle, VehicleFormState, VehicleFormValues } from "@/features/vehicles/types";
 import { formatVehicleCurrency } from "@/features/vehicles/utils";
+import { parseMoneyInput } from "@/lib/money";
 
 type VehicleFinancingFieldsProps = {
   fieldErrors: VehicleFormState["fieldErrors"];
@@ -42,13 +44,7 @@ function FieldError({
 }
 
 function parseNumericInput(value: string): number | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const numericValue = Number(value);
-
-  return Number.isFinite(numericValue) ? numericValue : null;
+  return parseMoneyInput(value);
 }
 
 function getInitialDownPaymentMode(vehicle?: Vehicle): DownPaymentInputMode {
@@ -164,13 +160,12 @@ export function VehicleFinancingFields({
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="price">Cash price</Label>
-          <Input
+          <CurrencyInput
             defaultValue={formValues.price}
             id="price"
-            inputMode="decimal"
             name="price"
-            onChange={(event) => setCashPriceInput(event.target.value)}
-            placeholder="0.00"
+            onValueChange={(displayValue) => setCashPriceInput(displayValue)}
+            placeholder="0"
           />
           <FieldError message={getFieldError(fieldErrors, "price")} />
         </div>
@@ -215,15 +210,25 @@ export function VehicleFinancingFields({
                 Percent
               </button>
             </div>
-            <Input
-              id="financing_down_payment_value"
-              inputMode="decimal"
-              min="0"
-              name="financing_down_payment_value"
-              onChange={(event) => setDownPaymentValue(event.target.value)}
-              placeholder={downPaymentMode === "percent" ? "20" : "100000"}
-              value={downPaymentValue}
-            />
+            {downPaymentMode === "amount" ? (
+              <CurrencyInput
+                id="financing_down_payment_value"
+                name="financing_down_payment_value"
+                onValueChange={(displayValue) => setDownPaymentValue(displayValue)}
+                placeholder="100,000"
+                value={downPaymentValue}
+              />
+            ) : (
+              <Input
+                id="financing_down_payment_value"
+                inputMode="decimal"
+                min="0"
+                name="financing_down_payment_value"
+                onChange={(event) => setDownPaymentValue(event.target.value)}
+                placeholder="20"
+                value={downPaymentValue}
+              />
+            )}
             <input
               name="financing_down_payment_mode"
               type="hidden"

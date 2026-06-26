@@ -1,12 +1,13 @@
 "use server";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 
 import { canManageVehicles } from "@/lib/auth/permissions";
 import { requireAdminAccessContext } from "@/lib/auth/session";
+import { redirectWithMessage } from "@/lib/redirect";
 import type { AdminAccessContext } from "@/lib/auth/types";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -72,18 +73,6 @@ function sanitizeVehicleRedirectPath(
   }
 
   return candidate;
-}
-
-function redirectWithMessage(
-  pathname: string,
-  key: "error" | "success",
-  message: string,
-): never {
-  const searchParams = new URLSearchParams({
-    [key]: message,
-  });
-
-  redirect(`${pathname}?${searchParams.toString()}`);
 }
 
 function formatVehicleFormErrors(error: {
@@ -622,7 +611,11 @@ export async function createVehicle(
       "success",
       successMessage,
     );
-  } catch {
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     return {
       ...initialVehicleFormState,
       error: "Unable to create the vehicle right now.",
@@ -732,7 +725,11 @@ export async function updateVehicle(
       "success",
       successMessage,
     );
-  } catch {
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     return {
       ...initialVehicleFormState,
       error: "Unable to update the vehicle right now.",
