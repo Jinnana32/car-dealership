@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { FACEBOOK_MESSENGER_PAGE_ID } from "@/features/facebook/constants";
 import { messengerClickSchema } from "@/features/facebook/validators";
 import {
   buildMessengerLink,
   buildPublicVehiclePath,
 } from "@/features/facebook/utils";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const MESSENGER_CLICK_SOURCE_DETAIL =
   "Public vehicle detail page Messenger CTA";
@@ -39,12 +40,12 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const { data: vehicle } = await adminSupabase
     .from("vehicles")
-    .select("id, slug")
+    .select("id, slug, title")
     .eq("dealership_id", dealership.id)
     .eq("slug", parsed.data.vehicleSlug)
     .eq("status", "published")
     .eq("availability", "available")
-    .maybeSingle<{ id: string; slug: string }>();
+    .maybeSingle<{ id: string; slug: string; title: string }>();
 
   if (!vehicle) {
     return NextResponse.redirect(new URL(fallbackPath, request.url));
@@ -59,9 +60,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       status: "not_connected" | "configured" | "connected" | "error";
     }>();
 
+  const messengerPageIdentifier =
+    connection?.messenger_page_identifier?.trim() || FACEBOOK_MESSENGER_PAGE_ID;
+
   if (
-    !connection?.messenger_page_identifier ||
-    (connection.status !== "configured" && connection.status !== "connected")
+    !messengerPageIdentifier ||
+    (connection &&
+      connection.status !== "configured" &&
+      connection.status !== "connected" &&
+      messengerPageIdentifier !== FACEBOOK_MESSENGER_PAGE_ID)
   ) {
     return NextResponse.redirect(new URL(fallbackPath, request.url));
   }
@@ -81,8 +88,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   return NextResponse.redirect(
     buildMessengerLink({
-      messengerPageIdentifier: connection.messenger_page_identifier,
+      messengerPageIdentifier,
       vehicleSlug: vehicle.slug,
+      vehicleTitle: vehicle.title,
     }),
   );
 }

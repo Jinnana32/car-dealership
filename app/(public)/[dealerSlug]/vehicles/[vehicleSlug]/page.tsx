@@ -174,7 +174,7 @@ export default async function PublicVehicleDetailPage({
                     <Button asChild className="w-full justify-start" size="lg" variant="outline">
                       <a href={messengerCta.href} rel="noreferrer" target="_blank">
                         <MessageCircleMore className="h-4 w-4" />
-                        Message us on Messenger
+                        Ask about this vehicle on Messenger
                       </a>
                     </Button>
                   ) : (
@@ -185,7 +185,7 @@ export default async function PublicVehicleDetailPage({
                       variant="outline"
                     >
                       <MessageCircleMore className="h-4 w-4" />
-                      Message us on Messenger
+                      Ask about this vehicle on Messenger
                     </Button>
                   )}
                   <Button className="w-full justify-start" disabled size="lg" variant="outline">

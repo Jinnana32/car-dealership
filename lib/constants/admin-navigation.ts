@@ -69,7 +69,7 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
       {
         href: "/admin/pipeline",
         icon: "pipeline",
-        label: "Pipeline",
+        label: "Leads",
       },
       ...(salesItem ? [salesItem] : []),
       {
@@ -111,7 +111,7 @@ export function getAdminNavigation(role: AppRole): AdminNavigationConfig {
           {
             href: "/admin/pipeline",
             icon: "pipeline",
-            label: "Pipeline",
+            label: "Leads",
           },
           ...(salesItem ? [salesItem] : []),
           {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { syncFacebookPostComments } from "@/features/facebook/comment-sync";
+import { syncFacebookIntegrations } from "@/features/facebook/facebook-sync";
 
 function isAuthorizedCronRequest(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
     );
   }
 
-  const summary = await syncFacebookPostComments();
+  const summary = await syncFacebookIntegrations();
 
   return NextResponse.json({
     ok: true,

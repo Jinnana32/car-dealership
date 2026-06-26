@@ -2,6 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 
+import { FACEBOOK_MESSENGER_PAGE_ID } from "@/features/facebook/constants";
+
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdminAccessContext } from "@/lib/auth/types";
@@ -290,7 +292,15 @@ export const getPublicMessengerCtaConfig = cache(
       .eq("dealership_id", input.dealershipId)
       .maybeSingle<PublicMessengerConnection>();
 
-    if (!data || !isMessengerConfigured(data)) {
+    const messengerPageIdentifier =
+      data?.messenger_page_identifier?.trim() || FACEBOOK_MESSENGER_PAGE_ID;
+
+    if (
+      !messengerPageIdentifier ||
+      (data &&
+        !isMessengerConfigured(data) &&
+        messengerPageIdentifier !== FACEBOOK_MESSENGER_PAGE_ID)
+    ) {
       return null;
     }
 
@@ -301,7 +311,7 @@ export const getPublicMessengerCtaConfig = cache(
 
     return {
       href: `/api/messenger-click?${searchParams.toString()}`,
-      pageName: data.page_name,
+      pageName: data?.page_name ?? null,
     };
   },
 );

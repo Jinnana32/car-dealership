@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import type { Json } from "@/lib/supabase/database.types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -17,6 +16,10 @@ import type {
   MessengerMessageInsert,
 } from "@/features/facebook/types";
 import {
+  resolveMessengerVehicleContext,
+  type ResolvedMessengerVehicleContext,
+} from "@/features/facebook/messenger-vehicle-context";
+import {
   facebookMessengerWebhookPayloadSchema,
   facebookWebhookVerificationSchema,
 } from "@/features/facebook/validators";
@@ -30,11 +33,7 @@ type ResolvedWebhookContext = {
   pageId: string;
 };
 
-type ResolvedVehicleContext = {
-  vehicleId: string | null;
-  vehicleSlug: string | null;
-  vehicleRef: string | null;
-};
+type ResolvedVehicleContext = ResolvedMessengerVehicleContext;
 
 type ParsedMessengerEvent = {
   eventKey: string;
@@ -279,46 +278,6 @@ async function resolveWebhookContext(
   }
 
   return null;
-}
-
-async function resolveVehicleContext(input: {
-  dealershipId: string;
-  referralRef: string | null;
-}): Promise<ResolvedVehicleContext> {
-  if (!input.referralRef?.startsWith("vehicle_")) {
-    return {
-      vehicleId: null,
-      vehicleRef: input.referralRef,
-      vehicleSlug: null,
-    };
-  }
-
-  const vehicleIdentifier = input.referralRef.slice("vehicle_".length).trim();
-
-  if (!vehicleIdentifier) {
-    return {
-      vehicleId: null,
-      vehicleRef: input.referralRef,
-      vehicleSlug: null,
-    };
-  }
-
-  const adminSupabase = createSupabaseAdminClient();
-  const identifierIsUuid = z.string().uuid().safeParse(vehicleIdentifier).success;
-  const query = adminSupabase
-    .from("vehicles")
-    .select("id, slug")
-    .eq("dealership_id", input.dealershipId);
-  const { data: vehicle } = await (identifierIsUuid
-    ? query.eq("id", vehicleIdentifier)
-    : query.eq("slug", vehicleIdentifier))
-    .maybeSingle<{ id: string; slug: string }>();
-
-  return {
-    vehicleId: vehicle?.id ?? null,
-    vehicleRef: input.referralRef,
-    vehicleSlug: vehicle?.slug ?? (identifierIsUuid ? null : vehicleIdentifier),
-  };
 }
 
 async function createFacebookApiLog(input: {
@@ -677,8 +636,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         continue;
       }
 
-      const vehicleContext = await resolveVehicleContext({
+      const vehicleContext = await resolveMessengerVehicleContext({
+        adminSupabase: createSupabaseAdminClient(),
         dealershipId: context.dealershipId,
+        messageText: parsedEvent.messageText,
         referralRef: parsedEvent.referralRef,
       });
 

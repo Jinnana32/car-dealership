@@ -18,6 +18,16 @@ import type {
 } from "@/features/facebook/types";
 import type { Vehicle } from "@/features/vehicles/types";
 import { buildVehicleTitle } from "@/features/vehicles/utils";
+import {
+  buildMessengerRef,
+  buildMessengerVehicleInquiryMessage,
+} from "@/features/facebook/messenger-vehicle-markers";
+
+export {
+  buildMessengerRef,
+  buildMessengerVehicleInquiryMessage,
+  parseMessengerVehicleMarker,
+} from "@/features/facebook/messenger-vehicle-markers";
 
 export function getFacebookConnectionStatusLabel(
   status: FacebookConnectionStatus,
@@ -85,17 +95,27 @@ export function buildFacebookPostUrl(input: {
   return null;
 }
 
-export function buildMessengerRef(vehicleSlug: string): string {
-  return `vehicle_${vehicleSlug}`;
-}
-
 export function buildMessengerLink(input: {
   messengerPageIdentifier: string;
   vehicleSlug: string;
+  vehicleTitle?: string | null;
 }): string {
   const ref = buildMessengerRef(input.vehicleSlug);
+  const params = new URLSearchParams({
+    ref,
+  });
 
-  return `https://m.me/${encodeURIComponent(input.messengerPageIdentifier)}?ref=${encodeURIComponent(ref)}`;
+  if (input.vehicleTitle?.trim()) {
+    params.set(
+      "text",
+      buildMessengerVehicleInquiryMessage({
+        vehicleSlug: input.vehicleSlug,
+        vehicleTitle: input.vehicleTitle.trim(),
+      }),
+    );
+  }
+
+  return `https://m.me/${encodeURIComponent(input.messengerPageIdentifier)}?${params.toString()}`;
 }
 
 export function normalizeFacebookConnectionStatus(input: {
