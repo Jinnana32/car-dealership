@@ -306,6 +306,30 @@ export const getPublicMessengerCtaConfig = cache(
   },
 );
 
+export const getPublicFacebookChatPageId = cache(
+  async (dealershipId: string): Promise<string | null> => {
+    const adminSupabase = createSupabaseAdminClient();
+    const { data } = await adminSupabase
+      .from("facebook_connections")
+      .select("page_id, status")
+      .eq("dealership_id", dealershipId)
+      .maybeSingle<Pick<FacebookConnection, "page_id" | "status">>();
+
+    if (
+      data &&
+      (data.status === "configured" || data.status === "connected")
+    ) {
+      const resolvedPageId = getResolvedFacebookPageId(data as FacebookConnection);
+
+      if (resolvedPageId) {
+        return resolvedPageId;
+      }
+    }
+
+    return process.env.META_PAGE_ID?.trim() || null;
+  },
+);
+
 export async function getVehicleFacebookPublications(
   access: AdminAccessContext,
   vehicleId: string,

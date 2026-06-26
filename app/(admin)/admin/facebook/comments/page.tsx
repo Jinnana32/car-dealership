@@ -134,7 +134,7 @@ export default async function FacebookCommentsPage({
               No post comments imported yet
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Comments on published Facebook posts will appear here after the Page feed webhook is subscribed and a customer comments on a post.
+              Comments on published Facebook posts will appear here after the Page feed webhook receives them or the comment poll sync job imports them.
             </p>
           </div>
         ) : (

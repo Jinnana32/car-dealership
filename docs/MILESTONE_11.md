@@ -16,12 +16,47 @@ When a customer comments on a Facebook Page post published from this app, automa
 
 Migration: `supabase/migrations/20260626120000_milestone_11_facebook_post_comments.sql`
 
+Comment poll sync migration: `supabase/migrations/20260627120000_facebook_comment_sync.sql`
+
+- `customers.fb_customer_id` — primary Facebook author match key
+- `facebook_post_publications.comments_last_synced_at` — poll bookkeeping
+
 ## API
 
 - `GET/POST /api/facebook/webhook` — **recommended Meta callback URL** (handles leadgen, messenger, and comments)
 - `GET/POST /api/facebook/comments/webhook` — comments-only endpoint (legacy / direct)
+- `GET/POST /api/cron/facebook-comment-sync` — poll Graph API for post comments (cron fallback)
 - Subscribe Page webhook field: **`feed`**
 - Processes `item=comment` + `verb=add` only
+
+## Comment poll sync (webhook fallback)
+
+When Meta webhooks are unreliable locally, use the poll sync job:
+
+1. Load published rows from `facebook_post_publications` (includes `vehicle_id`)
+2. Fetch comments from Graph API using each row's `facebook_post_id`
+3. Match customers by `customers.fb_customer_id`, then exact normalized name, then prior comment author
+4. Reuse `processFacebookComment()` to create inquiries and link the vehicle
+
+Run manually:
+
+```bash
+pnpm sync:facebook-comments
+```
+
+Requirements:
+
+- `CRON_SECRET`
+- `META_PAGE_ACCESS_TOKEN`
+- `META_APP_SECRET`
+- Dev server running at `NEXT_PUBLIC_SITE_URL` (defaults to `http://localhost:3000`)
+
+Schedule every minute in production with your host cron (or Vercel Cron) calling:
+
+```txt
+POST /api/cron/facebook-comment-sync
+Authorization: Bearer CRON_SECRET
+```
 
 ## Admin UI
 
@@ -47,7 +82,7 @@ Migration: `supabase/migrations/20260626120000_milestone_11_facebook_post_commen
 - **Page-authored comments** are ignored
 - **Empty comments** are ignored
 - **Vehicle linking** uses `facebook_post_publications` exact or fuzzy post ID match
-- **Customer reuse** uses prior `facebook_post_comments.author_facebook_id` when available
+- **Customer reuse** uses `customers.fb_customer_id`, exact normalized name, then prior `facebook_post_comments.author_facebook_id`
 
 ## Manual test checklist
 

@@ -7,7 +7,9 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
     "build": "next build",
-    "seed:post-samples": "node scripts/seed-vehicles-from-post-samples.mjs"
+    "seed:post-samples": "node scripts/seed-vehicles-from-post-samples.mjs",
+    "sync:facebook-comments": "node scripts/sync-facebook-comments.mjs",
+    "watch:facebook-comments": "node scripts/watch-facebook-comments.mjs"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.3.0",

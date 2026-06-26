@@ -1,6 +1,8 @@
 import "server-only";
 
 import { buildCustomerNameParts } from "@/features/inquiries/utils";
+import { resolveCustomerForFacebookAuthor } from "@/features/facebook/comment-customer-matching";
+import type { CustomerMatchIndex } from "@/features/facebook/comment-customer-matching";
 import { resolveFacebookWebhookContext } from "@/features/facebook/leadgen-server";
 import type {
   FacebookPostComment,
@@ -37,7 +39,7 @@ type ResolvedFacebookWebhookContext = NonNullable<
   Awaited<ReturnType<typeof resolveFacebookWebhookContext>>
 >;
 
-type ResolvedPublicationContext = {
+export type ResolvedPublicationContext = {
   publicationId: string | null;
   vehicleId: string | null;
 };
@@ -138,6 +140,42 @@ export function describeFacebookCommentParseSkip(input: {
   }
 
   return null;
+}
+
+export function buildParsedFacebookCommentEventFromGraph(input: {
+  authorFacebookId: string | null;
+  authorName: string;
+  commentId: string;
+  createdTime: string | null;
+  message: string;
+  pageId: string;
+  parentCommentId: string | null;
+  postId: string;
+}): ParsedFacebookCommentEvent {
+  return {
+    authorFacebookId: input.authorFacebookId,
+    authorName: input.authorName,
+    commentId: input.commentId,
+    createdTime: input.createdTime,
+    eventKey: `comment:${input.pageId}:${input.commentId}`,
+    eventName: "feed_comment_add",
+    message: input.message,
+    pageId: input.pageId,
+    parentCommentId: input.parentCommentId,
+    postId: input.postId,
+    rawPayload: {
+      comment_id: input.commentId,
+      from: {
+        id: input.authorFacebookId,
+        name: input.authorName,
+      },
+      item: "comment",
+      message: input.message,
+      post_id: input.postId,
+      sync_source: "facebook_comment_poll",
+      verb: "add",
+    },
+  };
 }
 
 export function parseFacebookCommentEvent(input: {
@@ -345,28 +383,6 @@ async function updateFacebookPostCommentRow(input: {
   }
 }
 
-async function findCustomerByFacebookAuthor(input: {
-  adminSupabase: AdminSupabaseClient;
-  authorFacebookId: string | null;
-  dealershipId: string;
-}): Promise<string | null> {
-  if (!input.authorFacebookId) {
-    return null;
-  }
-
-  const { data: priorComment } = await input.adminSupabase
-    .from("facebook_post_comments")
-    .select("customer_id")
-    .eq("dealership_id", input.dealershipId)
-    .eq("author_facebook_id", input.authorFacebookId)
-    .not("customer_id", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<{ customer_id: string | null }>();
-
-  return priorComment?.customer_id ?? null;
-}
-
 async function createCustomerFromCommentAuthor(input: {
   adminSupabase: AdminSupabaseClient;
   authorFacebookId: string | null;
@@ -382,6 +398,7 @@ async function createCustomerFromCommentAuthor(input: {
     .from("customers")
     .insert({
       dealership_id: input.dealershipId,
+      fb_customer_id: input.authorFacebookId,
       facebook_profile_url: facebookProfileUrl,
       first_name: firstName,
       full_name: input.authorName,
@@ -463,14 +480,18 @@ async function annotateCommentInquiryArtifacts(input: {
 
 export async function processFacebookComment(input: {
   context: ResolvedFacebookWebhookContext;
+  customerMatchIndex?: CustomerMatchIndex;
   parsedEvent: ParsedFacebookCommentEvent;
+  publication?: ResolvedPublicationContext;
 }): Promise<FacebookPostCommentProcessingSummary> {
   const adminSupabase = createSupabaseAdminClient();
-  const publication = await resolvePublicationByPostId({
-    adminSupabase,
-    dealershipId: input.context.dealershipId,
-    postId: input.parsedEvent.postId,
-  });
+  const publication =
+    input.publication ??
+    (await resolvePublicationByPostId({
+      adminSupabase,
+      dealershipId: input.context.dealershipId,
+      postId: input.parsedEvent.postId,
+    }));
 
   logFacebookWebhookInfo("Resolved publication for Facebook comment.", {
     commentId: input.parsedEvent.commentId,
@@ -538,10 +559,12 @@ export async function processFacebookComment(input: {
 
   try {
     if (!customerId) {
-      customerId = await findCustomerByFacebookAuthor({
+      customerId = await resolveCustomerForFacebookAuthor({
         adminSupabase,
         authorFacebookId: input.parsedEvent.authorFacebookId,
+        authorName: input.parsedEvent.authorName,
         dealershipId: input.context.dealershipId,
+        matchIndex: input.customerMatchIndex,
       });
     }
 

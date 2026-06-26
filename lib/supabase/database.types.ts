@@ -73,6 +73,7 @@ export type Database = {
           dealership_id: string;
           email: string | null;
           facebook_profile_url: string | null;
+          fb_customer_id: string | null;
           first_name: string | null;
           full_name: string;
           id: string;
@@ -88,6 +89,7 @@ export type Database = {
           dealership_id: string;
           email?: string | null;
           facebook_profile_url?: string | null;
+          fb_customer_id?: string | null;
           first_name?: string | null;
           full_name: string;
           id?: string;
@@ -103,6 +105,7 @@ export type Database = {
           dealership_id?: string;
           email?: string | null;
           facebook_profile_url?: string | null;
+          fb_customer_id?: string | null;
           first_name?: string | null;
           full_name?: string;
           id?: string;
@@ -468,6 +471,7 @@ export type Database = {
       facebook_post_publications: {
         Row: {
           caption: string;
+          comments_last_synced_at: string | null;
           created_at: string;
           dealership_id: string;
           error_message: string | null;
@@ -488,6 +492,7 @@ export type Database = {
         };
         Insert: {
           caption: string;
+          comments_last_synced_at?: string | null;
           created_at?: string;
           dealership_id: string;
           error_message?: string | null;
@@ -508,6 +513,7 @@ export type Database = {
         };
         Update: {
           caption?: string;
+          comments_last_synced_at?: string | null;
           created_at?: string;
           dealership_id?: string;
           error_message?: string | null;

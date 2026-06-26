@@ -29,6 +29,22 @@ const facebookPublishingEnvSchema = z.object({
     .url("NEXT_PUBLIC_SITE_URL must be a valid URL."),
 });
 
+const facebookGraphApiEnvSchema = z.object({
+  META_GRAPH_API_VERSION: z
+    .string()
+    .trim()
+    .min(1, "META_GRAPH_API_VERSION is invalid.")
+    .default("v23.0"),
+  META_PAGE_ACCESS_TOKEN: z
+    .string()
+    .trim()
+    .min(1, "META_PAGE_ACCESS_TOKEN is required."),
+  META_APP_SECRET: z
+    .string()
+    .trim()
+    .min(1, "META_APP_SECRET is required."),
+});
+
 const facebookWebhookEnvSchema = z.object({
   META_WEBHOOK_VERIFY_TOKEN: z
     .string()
@@ -132,6 +148,14 @@ async function postToFacebook(input: {
     statusCode: response.status,
     success: true,
   };
+}
+
+export function getFacebookGraphApiEnv(): z.infer<typeof facebookGraphApiEnvSchema> {
+  return facebookGraphApiEnvSchema.parse({
+    META_GRAPH_API_VERSION: process.env.META_GRAPH_API_VERSION,
+    META_APP_SECRET: process.env.META_APP_SECRET,
+    META_PAGE_ACCESS_TOKEN: process.env.META_PAGE_ACCESS_TOKEN,
+  });
 }
 
 export function getFacebookPublishingEnv(): z.infer<
