@@ -1,7 +1,10 @@
 import type { ReactElement, ReactNode } from "react";
 import { notFound } from "next/navigation";
 
-import { getPublicFacebookChatPageId } from "@/features/facebook/queries";
+import {
+  getPublicFacebookChatPageId,
+  getPublicMessengerFallbackHref,
+} from "@/features/facebook/queries";
 import { FacebookMessengerChat } from "@/features/public/components/facebook-messenger-chat";
 import { getPublicDealershipBySlug } from "@/features/public/queries";
 
@@ -23,14 +26,16 @@ export default async function DealerPublicLayout({
     notFound();
   }
 
-  const pageId = await getPublicFacebookChatPageId(dealership.id);
-  const sdkVersion = process.env.META_GRAPH_API_VERSION?.trim() || "v23.0";
+  const [pageId, messengerHref] = await Promise.all([
+    getPublicFacebookChatPageId(dealership.id),
+    getPublicMessengerFallbackHref(dealership.id),
+  ]);
 
   return (
     <>
       {children}
-      {pageId ? (
-        <FacebookMessengerChat pageId={pageId} sdkVersion={sdkVersion} />
+      {pageId || messengerHref ? (
+        <FacebookMessengerChat messengerHref={messengerHref} pageId={pageId} />
       ) : null}
     </>
   );

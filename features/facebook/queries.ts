@@ -330,6 +330,23 @@ export const getPublicFacebookChatPageId = cache(
   },
 );
 
+export const getPublicMessengerFallbackHref = cache(
+  async (dealershipId: string): Promise<string | null> => {
+    const adminSupabase = createSupabaseAdminClient();
+    const { data } = await adminSupabase
+      .from("facebook_connections")
+      .select("messenger_page_identifier, status")
+      .eq("dealership_id", dealershipId)
+      .maybeSingle<Pick<FacebookConnection, "messenger_page_identifier" | "status">>();
+
+    if (!isMessengerConfigured(data)) {
+      return null;
+    }
+
+    return `https://m.me/${encodeURIComponent(data.messenger_page_identifier.trim())}`;
+  },
+);
+
 export async function getVehicleFacebookPublications(
   access: AdminAccessContext,
   vehicleId: string,

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, type ReactElement } from "react";
+import { MessageCircleMore } from "lucide-react";
+import { useEffect, useState, type ReactElement } from "react";
 
 type FacebookMessengerChatProps = {
-  pageId: string;
+  messengerHref: string | null;
+  pageId: string | null;
   sdkVersion?: string;
   themeColor?: string;
 };
 
 type FacebookSdk = {
+  init: (params: { version: string; xfbml: boolean }) => void;
   XFBML: {
     parse: (node?: HTMLElement) => void;
   };
@@ -21,9 +24,11 @@ declare global {
   }
 }
 
+const CHAT_ROOT_ID = "facebook-customer-chat-root";
 const DEFAULT_THEME_COLOR = "#e11d2e";
-const DEFAULT_SDK_VERSION = "v23.0";
+const CUSTOMER_CHAT_SDK_VERSION = "v21.0";
 const SDK_SCRIPT_ID = "facebook-jssdk";
+const PLUGIN_CHECK_MS = 5000;
 
 function ensureFbRoot(): void {
   if (document.getElementById("fb-root")) {
@@ -33,6 +38,31 @@ function ensureFbRoot(): void {
   const fbRoot = document.createElement("div");
   fbRoot.id = "fb-root";
   document.body.appendChild(fbRoot);
+}
+
+function ensureChatRoot(input: {
+  pageId: string;
+  themeColor: string;
+}): HTMLDivElement {
+  const existing = document.getElementById(CHAT_ROOT_ID);
+
+  if (existing instanceof HTMLDivElement) {
+    existing.setAttribute("attribution", "biz_inbox");
+    existing.setAttribute("page_id", input.pageId);
+    existing.setAttribute("theme_color", input.themeColor);
+
+    return existing;
+  }
+
+  const chatRoot = document.createElement("div");
+  chatRoot.id = CHAT_ROOT_ID;
+  chatRoot.className = "fb-customerchat";
+  chatRoot.setAttribute("attribution", "biz_inbox");
+  chatRoot.setAttribute("page_id", input.pageId);
+  chatRoot.setAttribute("theme_color", input.themeColor);
+  document.body.appendChild(chatRoot);
+
+  return chatRoot;
 }
 
 function loadFacebookSdk(sdkVersion: string): Promise<void> {
@@ -59,6 +89,10 @@ function loadFacebookSdk(sdkVersion: string): Promise<void> {
 
   return new Promise((resolve, reject) => {
     window.fbAsyncInit = () => {
+      window.FB?.init({
+        version: sdkVersion,
+        xfbml: true,
+      });
       resolve();
     };
 
@@ -76,35 +110,70 @@ function loadFacebookSdk(sdkVersion: string): Promise<void> {
   });
 }
 
+function hasCustomerChatPlugin(chatRoot: HTMLElement | null): boolean {
+  return Boolean(chatRoot?.querySelector("iframe"));
+}
+
 export function FacebookMessengerChat({
+  messengerHref,
   pageId,
-  sdkVersion = DEFAULT_SDK_VERSION,
+  sdkVersion = CUSTOMER_CHAT_SDK_VERSION,
   themeColor = DEFAULT_THEME_COLOR,
 }: FacebookMessengerChatProps): ReactElement | null {
+  const [showFallback, setShowFallback] = useState(!pageId && Boolean(messengerHref));
+
   useEffect(() => {
-    let chatRoot: HTMLDivElement | null = null;
+    if (!pageId) {
+      return;
+    }
+
     let cancelled = false;
+    let checkTimer: number | null = null;
 
     const mountChatPlugin = async (): Promise<void> => {
       ensureFbRoot();
-
-      chatRoot = document.createElement("div");
-      chatRoot.className = "fb-customerchat";
-      chatRoot.setAttribute("attribution", "biz_inbox");
-      chatRoot.setAttribute("page_id", pageId);
-      chatRoot.setAttribute("theme_color", themeColor);
-      document.body.appendChild(chatRoot);
+      const chatRoot = ensureChatRoot({
+        pageId,
+        themeColor,
+      });
 
       try {
         await loadFacebookSdk(sdkVersion);
 
-        if (cancelled || !chatRoot) {
+        if (cancelled) {
           return;
         }
 
         window.FB?.XFBML.parse(chatRoot);
-      } catch {
-        // Facebook SDK blocked or failed to load.
+
+        checkTimer = window.setTimeout(() => {
+          if (cancelled) {
+            return;
+          }
+
+          const pluginLoaded = hasCustomerChatPlugin(chatRoot);
+
+          if (!pluginLoaded) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "[facebook-messenger-chat] Meta Customer Chat plugin did not render. " +
+                  "Whitelist this domain in Meta Page Inbox settings, or use the fallback button.",
+              );
+            }
+
+            if (messengerHref) {
+              setShowFallback(true);
+            }
+          }
+        }, PLUGIN_CHECK_MS);
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[facebook-messenger-chat] Facebook SDK failed to load.", error);
+        }
+
+        if (messengerHref) {
+          setShowFallback(true);
+        }
       }
     };
 
@@ -112,9 +181,26 @@ export function FacebookMessengerChat({
 
     return () => {
       cancelled = true;
-      chatRoot?.remove();
-    };
-  }, [pageId, sdkVersion, themeColor]);
 
-  return null;
+      if (checkTimer !== null) {
+        window.clearTimeout(checkTimer);
+      }
+    };
+  }, [messengerHref, pageId, sdkVersion, themeColor]);
+
+  if (!showFallback || !messengerHref) {
+    return null;
+  }
+
+  return (
+    <a
+      aria-label="Message us on Messenger"
+      className="fixed bottom-5 right-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#0084ff] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#0077e6]"
+      href={messengerHref}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <MessageCircleMore className="h-7 w-7" />
+    </a>
+  );
 }
