@@ -173,3 +173,8 @@ export const DEFAULT_FACEBOOK_LEAD_FIELD_MAP = {
   ],
   phone: ["phone_number", "phone", "mobile_number", "mobile"],
 } as const;
+
+/** Best Wheels Facebook Page ID for public Messenger chat. */
+export const FACEBOOK_MESSENGER_PAGE_ID = "1135130969687423";
+
+export const FACEBOOK_MESSENGER_FALLBACK_HREF = `https://m.me/${FACEBOOK_MESSENGER_PAGE_ID}`;
