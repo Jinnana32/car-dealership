@@ -7,6 +7,7 @@ import {
 } from "@/features/facebook/comment-customer-matching";
 import { FACEBOOK_MESSENGER_PAGE_ID } from "@/features/facebook/constants";
 import { resolveMessengerVehicleContext } from "@/features/facebook/messenger-vehicle-context";
+import type { ResolvedMessengerVehicleContext } from "@/features/facebook/messenger-vehicle-context";
 import { createFacebookApiLog, resolveFacebookWebhookContext } from "@/features/facebook/leadgen-server";
 import type {
   MessengerConversation,
@@ -81,11 +82,65 @@ async function createCustomerFromMessengerAuthor(input: {
   return data.id;
 }
 
+async function linkMessengerVehicleToInquiry(input: {
+  adminSupabase: AdminSupabaseClient;
+  conversation: MessengerConversation;
+  dealershipId: string;
+  message: FacebookGraphMessengerMessage;
+  vehicleContext: ResolvedMessengerVehicleContext;
+}): Promise<void> {
+  if (!input.vehicleContext.vehicleId) {
+    return;
+  }
+
+  if (input.conversation.vehicle_id !== input.vehicleContext.vehicleId) {
+    await input.adminSupabase
+      .from("messenger_conversations")
+      .update({
+        referral_ref:
+          input.vehicleContext.vehicleRef ?? input.conversation.referral_ref,
+        vehicle_id: input.vehicleContext.vehicleId,
+        vehicle_slug: input.vehicleContext.vehicleSlug,
+      })
+      .eq("id", input.conversation.id);
+  }
+
+  const inquiryId =
+    input.conversation.inquiry_id ??
+    (await findExistingInquiryByConversationId({
+      adminSupabase: input.adminSupabase,
+      conversationId: input.conversation.id,
+      dealershipId: input.dealershipId,
+    }));
+
+  if (!inquiryId) {
+    return;
+  }
+
+  const { data: inquiry } = await input.adminSupabase
+    .from("inquiries")
+    .select("id, vehicle_id")
+    .eq("id", inquiryId)
+    .maybeSingle<{ id: string; vehicle_id: string | null }>();
+
+  if (inquiry && !inquiry.vehicle_id) {
+    await input.adminSupabase
+      .from("inquiries")
+      .update({
+        vehicle_id: input.vehicleContext.vehicleId,
+      })
+      .eq("id", inquiryId);
+  }
+}
+
 async function upsertMessengerConversationRow(input: {
   adminSupabase: AdminSupabaseClient;
   context: ResolvedFacebookWebhookContext;
   message: FacebookGraphMessengerMessage;
-}): Promise<MessengerConversation | null> {
+}): Promise<{
+  conversation: MessengerConversation | null;
+  vehicleContext: ResolvedMessengerVehicleContext;
+}> {
   const { data: existingConversation } = await input.adminSupabase
     .from("messenger_conversations")
     .select("*")
@@ -118,15 +173,18 @@ async function upsertMessengerConversationRow(input: {
         : {}),
     } satisfies Json,
     page_id: input.context.pageId,
-    referral_ref: existingConversation?.referral_ref ?? vehicleContext.vehicleRef,
+    referral_ref:
+      vehicleContext.vehicleRef ?? existingConversation?.referral_ref ?? null,
     sender_id: input.message.senderFacebookId,
     sender_psid: input.message.senderFacebookId,
     status:
       existingConversation?.status === "converted"
         ? "converted"
         : existingConversation?.status ?? "new",
-    vehicle_id: existingConversation?.vehicle_id ?? vehicleContext.vehicleId,
-    vehicle_slug: existingConversation?.vehicle_slug ?? vehicleContext.vehicleSlug,
+    vehicle_id:
+      vehicleContext.vehicleId ?? existingConversation?.vehicle_id ?? null,
+    vehicle_slug:
+      vehicleContext.vehicleSlug ?? existingConversation?.vehicle_slug ?? null,
   };
 
   const { data, error } = await input.adminSupabase
@@ -138,10 +196,16 @@ async function upsertMessengerConversationRow(input: {
     .single<MessengerConversation>();
 
   if (error || !data) {
-    return null;
+    return {
+      conversation: null,
+      vehicleContext,
+    };
   }
 
-  return data;
+  return {
+    conversation: data,
+    vehicleContext,
+  };
 }
 
 async function insertMessengerMessageRow(input: {
@@ -352,11 +416,12 @@ export async function processMessengerSyncMessage(input: {
   customerMatchIndex?: CustomerMatchIndex;
   message: FacebookGraphMessengerMessage;
 }): Promise<MessengerSyncProcessingSummary> {
-  const conversation = await upsertMessengerConversationRow({
+  const upsertResult = await upsertMessengerConversationRow({
     adminSupabase: input.adminSupabase,
     context: input.context,
     message: input.message,
   });
+  const conversation = upsertResult.conversation;
 
   if (!conversation) {
     return {
@@ -369,6 +434,14 @@ export async function processMessengerSyncMessage(input: {
       status: "failed",
     };
   }
+
+  await linkMessengerVehicleToInquiry({
+    adminSupabase: input.adminSupabase,
+    conversation,
+    dealershipId: input.context.dealershipId,
+    message: input.message,
+    vehicleContext: upsertResult.vehicleContext,
+  });
 
   const messageInsertState = await insertMessengerMessageRow({
     adminSupabase: input.adminSupabase,
@@ -404,7 +477,13 @@ export async function processMessengerSyncMessage(input: {
     const inquiryResult = await ensureInquiryForConversation({
       adminSupabase: input.adminSupabase,
       context: input.context,
-      conversation,
+      conversation: {
+        ...conversation,
+        vehicle_id:
+          upsertResult.vehicleContext.vehicleId ?? conversation.vehicle_id,
+        vehicle_slug:
+          upsertResult.vehicleContext.vehicleSlug ?? conversation.vehicle_slug,
+      },
       customerMatchIndex: input.customerMatchIndex,
       message: input.message,
     });

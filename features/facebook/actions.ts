@@ -22,6 +22,7 @@ import {
   getFacebookConnection,
   getFacebookPublishReadiness,
 } from "@/features/facebook/queries";
+import { resolvePublicMessengerPageId } from "@/features/facebook/public-messenger-page";
 import {
   buildAdPrimaryText,
   buildFacebookCaption,
@@ -362,10 +363,10 @@ async function runGeneratedContentAction(input: {
   const publicVehicleUrl = publicVehiclePath;
   const connection = await getFacebookConnection(access);
   const messengerLink =
-    connection?.messenger_page_identifier &&
+    connection &&
     (connection.status === "configured" || connection.status === "connected")
       ? buildMessengerLink({
-          messengerPageIdentifier: connection.messenger_page_identifier,
+          messengerPageIdentifier: resolvePublicMessengerPageId(connection),
           vehicleSlug: vehicle.slug,
         })
       : null;

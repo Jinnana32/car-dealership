@@ -2,7 +2,10 @@ import "server-only";
 
 import { cache } from "react";
 
-import { FACEBOOK_MESSENGER_PAGE_ID } from "@/features/facebook/constants";
+import {
+  buildPublicMessengerHref,
+  resolvePublicMessengerPageId,
+} from "@/features/facebook/public-messenger-page";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,11 +51,6 @@ type FacebookPublicationHistorySearchParams = {
   vehicleId?: string | string[];
 };
 
-type PublicMessengerConnection = {
-  messenger_page_identifier: string | null;
-  page_name: string | null;
-  status: FacebookConnection["status"];
-};
 
 function getScalarValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -288,19 +286,13 @@ export const getPublicMessengerCtaConfig = cache(
     const adminSupabase = createSupabaseAdminClient();
     const { data } = await adminSupabase
       .from("facebook_connections")
-      .select("messenger_page_identifier, page_name, status")
+      .select("page_id, page_name, status")
       .eq("dealership_id", input.dealershipId)
-      .maybeSingle<PublicMessengerConnection>();
+      .maybeSingle<Pick<FacebookConnection, "page_id" | "page_name" | "status">>();
 
-    const messengerPageIdentifier =
-      data?.messenger_page_identifier?.trim() || FACEBOOK_MESSENGER_PAGE_ID;
+    const pageId = resolvePublicMessengerPageId(data);
 
-    if (
-      !messengerPageIdentifier ||
-      (data &&
-        !isMessengerConfigured(data) &&
-        messengerPageIdentifier !== FACEBOOK_MESSENGER_PAGE_ID)
-    ) {
+    if (!pageId) {
       return null;
     }
 
@@ -317,43 +309,23 @@ export const getPublicMessengerCtaConfig = cache(
 );
 
 export const getPublicFacebookChatPageId = cache(
-  async (dealershipId: string): Promise<string | null> => {
+  async (dealershipId: string): Promise<string> => {
     const adminSupabase = createSupabaseAdminClient();
     const { data } = await adminSupabase
       .from("facebook_connections")
-      .select("page_id, status")
+      .select("page_id")
       .eq("dealership_id", dealershipId)
-      .maybeSingle<Pick<FacebookConnection, "page_id" | "status">>();
+      .maybeSingle<Pick<FacebookConnection, "page_id">>();
 
-    if (
-      data &&
-      (data.status === "configured" || data.status === "connected")
-    ) {
-      const resolvedPageId = getResolvedFacebookPageId(data as FacebookConnection);
-
-      if (resolvedPageId) {
-        return resolvedPageId;
-      }
-    }
-
-    return process.env.META_PAGE_ID?.trim() || null;
+    return resolvePublicMessengerPageId(data);
   },
 );
 
 export const getPublicMessengerFallbackHref = cache(
-  async (dealershipId: string): Promise<string | null> => {
-    const adminSupabase = createSupabaseAdminClient();
-    const { data } = await adminSupabase
-      .from("facebook_connections")
-      .select("messenger_page_identifier, status")
-      .eq("dealership_id", dealershipId)
-      .maybeSingle<Pick<FacebookConnection, "messenger_page_identifier" | "status">>();
+  async (dealershipId: string): Promise<string> => {
+    const pageId = await getPublicFacebookChatPageId(dealershipId);
 
-    if (!isMessengerConfigured(data)) {
-      return null;
-    }
-
-    return `https://m.me/${encodeURIComponent(data.messenger_page_identifier.trim())}`;
+    return buildPublicMessengerHref(pageId);
   },
 );
 
@@ -697,7 +669,7 @@ export async function getVehicleFacebookContext(input: {
     latestContent,
     messengerLink: isMessengerConfigured(connection)
       ? buildMessengerLink({
-          messengerPageIdentifier: connection.messenger_page_identifier,
+          messengerPageIdentifier: resolvePublicMessengerPageId(connection),
           vehicleSlug: input.vehicle.slug,
         })
       : null,

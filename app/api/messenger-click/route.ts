@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { FACEBOOK_MESSENGER_PAGE_ID } from "@/features/facebook/constants";
+import { resolvePublicMessengerPageId } from "@/features/facebook/public-messenger-page";
 import { messengerClickSchema } from "@/features/facebook/validators";
 import {
   buildMessengerLink,
@@ -53,23 +53,16 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const { data: connection } = await adminSupabase
     .from("facebook_connections")
-    .select("messenger_page_identifier, status")
+    .select("page_id, status")
     .eq("dealership_id", dealership.id)
     .maybeSingle<{
-      messenger_page_identifier: string | null;
+      page_id: string | null;
       status: "not_connected" | "configured" | "connected" | "error";
     }>();
 
-  const messengerPageIdentifier =
-    connection?.messenger_page_identifier?.trim() || FACEBOOK_MESSENGER_PAGE_ID;
+  const messengerPageId = resolvePublicMessengerPageId(connection);
 
-  if (
-    !messengerPageIdentifier ||
-    (connection &&
-      connection.status !== "configured" &&
-      connection.status !== "connected" &&
-      messengerPageIdentifier !== FACEBOOK_MESSENGER_PAGE_ID)
-  ) {
+  if (!messengerPageId) {
     return NextResponse.redirect(new URL(fallbackPath, request.url));
   }
 
@@ -88,7 +81,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   return NextResponse.redirect(
     buildMessengerLink({
-      messengerPageIdentifier,
+      messengerPageIdentifier: messengerPageId,
       vehicleSlug: vehicle.slug,
       vehicleTitle: vehicle.title,
     }),

@@ -151,10 +151,10 @@ export default async function FacebookSettingsPage({
                       disabled={!canManageSettings}
                       id="messenger_page_identifier"
                       name="messenger_page_identifier"
-                      placeholder="bestwheels"
+                      placeholder="1135130969687423"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Required to generate Messenger links and public Messenger CTAs.
+                      Legacy field. Public Messenger links use the Facebook Page ID above.
                     </p>
                   </div>
 
